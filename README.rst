@@ -13,7 +13,7 @@ A python package to easily send data to Amazon Redshift
 
     git clone https://github.com/pflucet/pyred
 
-2) Go to the pyred folder
+2) Go to the pyred folder you just cloned
 
 ::
 
