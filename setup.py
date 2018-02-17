@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 
-# Learn more: https://github.com/kennethreitz/setup.py
-
 from setuptools import setup, find_packages
 
 
@@ -14,7 +12,7 @@ with open('LICENSE') as f:
 setup(
     name='pyred',
     version='0.0.1',
-    description='Send easily data to Amazon Redshift',
+    description='Easily send data to Amazon Redshift',
     long_description=readme,
     author='Dacker',
     author_email='hello@dacker.co',

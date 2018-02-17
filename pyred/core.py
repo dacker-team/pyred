@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import psycopg2 as psycopg2
-import redshift_credentials
+from . import redshift_credentials
 
 
 def send_to_redshift(instance, data, replace=True, batch_size=1000):
@@ -41,7 +41,7 @@ def send_to_redshift(instance, data, replace=True, batch_size=1000):
         temp_string = ','.join(map(lambda a: '(' + ','.join(map(lambda b: '%s', a)) + ')', tuple(temp_row)))
 
         inserting_request = '''INSERT INTO ''' + data["table_name"] + ''' (''' + ", ".join(
-            data["rows_name"]) + ''') VALUES ''' + temp_string + ''';'''
+            data["columns_name"]) + ''') VALUES ''' + temp_string + ''';'''
         if not final_data:
             print("Execute")
             cursor.execute(inserting_request, final_data)
