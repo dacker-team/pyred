@@ -53,14 +53,14 @@ A python package to easily send data to Amazon Redshift
 
 .. code:: python
 
-    data = data = {
+    data = {
             "table_name"    : 'name_of_the_redshift_schema' + '.' + 'name_of_the_redshift_table'
             #Table must already exist
             "columns_name"  : [first_column_name,second_column_name,...,last_column_name],
             "rows"      : [[first_raw_value,second_raw_value,...,last_raw_value],...]
         }
 
-4) Send your data :
+4) Send your data (use the same {INSTANCE} parameter as environment variables):
                 
 
 .. code:: python
@@ -72,3 +72,17 @@ A python package to easily send data to Amazon Redshift
    in the table
 -  batch\_size (default=1000) argument also exists to send data in
    batchs
+
+3) Example
+''''''
+You have a table called dog in you animal scheme. This table has two columns : 'name' and 'size'.
+You want to add two dogs (= two rows) : Pif which is big and Milou which is small.
+*data* will be like that:
+
+.. code:: python
+
+    data = {
+            "table_name"    : 'animal.dog'
+            "columns_name"  : ['name','size'],
+            "rows"      : [['Pif','big'], ['Milou','small']]
+        }
