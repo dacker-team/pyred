@@ -18,6 +18,7 @@ setup(
     author_email='hello@dacker.co',
     url='https://github.com/pflucet/pyred',
     license=license,
+    keywords=['send data', 'amazon redshift', 'easy'],
     packages=find_packages(exclude=('tests', 'docs'))
 )
 
