@@ -10,14 +10,18 @@ A python package to easily send data to Amazon Redshift
 Open a terminal and clone the report where you want
                                                    
 
-``git clone https://github.com/pflucet/pyred`` ###### Go to the pyred
-folder ``cd pyred/`` ###### Install package ``pip install .`` *or*
+``git clone https://github.com/pflucet/pyred``
+Go to the pyred folder
+``cd pyred/``
+Install package
+``pip install .``
+*or*
 ``python setup.py install``
 
 2) Use
 ''''''
 
-Be sure that you have set environment variables with redshift credentials like this:
+1) Be sure that you have set environment variables with Redshift credentials like this:
                                                                                     
 
 ::
@@ -28,10 +32,10 @@ Be sure that you have set environment variables with redshift credentials like t
     export RED_{INSTANCE}_PORT=""
     export RED_{INSTANCE}_PASSWORD=""
 
-Be also sure that your IP address is authorized for the redshift cluster/instance.
+2) Be also sure that your IP address is authorized for the redshift cluster/instance.
                                                                                   
 
-Prepare your data like that:
+3) Prepare your data like that:
                             
 
 .. code:: python
@@ -43,7 +47,7 @@ Prepare your data like that:
             "rows"      : [[first_raw_value,second_raw_value,...,last_raw_value],...]
         }
 
-Send your data :
+4) Send your data :
                 
 
 .. code:: python
