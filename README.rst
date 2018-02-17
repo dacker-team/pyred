@@ -1,41 +1,57 @@
-# pyred
-### A python package to easily send data to Amazon Redshift
-##### 1) Installation
-###### Open a terminal and clone the report where you want
-`git clone https://github.com/pflucet/pyred`
-###### Go to the pyred folder
-`cd pyred/`
-###### Install package
-`pip install .`
-*or*
-`python setup.py install`
+pyred
+=====
 
-##### 2) Use
-###### Be sure that you have set environment variables with redshift credentials like this:
+A python package to easily send data to Amazon Redshift
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-```
-export RED_{INSTANCE}_DATABASE=""
-export RED_{INSTANCE}_USERNAME=""
-export RED_{INSTANCE}_HOST=""
-export RED_{INSTANCE}_PORT=""
-export RED_{INSTANCE}_PASSWORD=""
-````
-###### Be also sure that your IP address is authorized for the redshift cluster/instance.
-###### Prepare your data like that:
-```python
-data = data = {
-        "table_name" 	: 'name_of_the_redshift_schema' + '.' + 'name_of_the_redshift_table'
-        #Table must already exist
-        "columns_name" 	: [first_column_name,second_column_name,...,last_column_name],
-        "rows"		: [[first_raw_value,second_raw_value,...,last_raw_value],...]
-    }
-```
-###### Send your data :
-```python
-import pyred
-pyred.send_to_redshift({INSTANCE},data,replace=True)
-```
-- replace (default=True) argument allows you to replace or append data in the table
-- batch_size (default=1000) argument also exists to send data in batchs
+1) Installation
+'''''''''''''''
 
+Open a terminal and clone the report where you want
+                                                   
 
+``git clone https://github.com/pflucet/pyred`` ###### Go to the pyred
+folder ``cd pyred/`` ###### Install package ``pip install .`` *or*
+``python setup.py install``
+
+2) Use
+''''''
+
+Be sure that you have set environment variables with redshift credentials like this:
+                                                                                    
+
+::
+
+    export RED_{INSTANCE}_DATABASE=""
+    export RED_{INSTANCE}_USERNAME=""
+    export RED_{INSTANCE}_HOST=""
+    export RED_{INSTANCE}_PORT=""
+    export RED_{INSTANCE}_PASSWORD=""
+
+Be also sure that your IP address is authorized for the redshift cluster/instance.
+                                                                                  
+
+Prepare your data like that:
+                            
+
+.. code:: python
+
+    data = data = {
+            "table_name"    : 'name_of_the_redshift_schema' + '.' + 'name_of_the_redshift_table'
+            #Table must already exist
+            "columns_name"  : [first_column_name,second_column_name,...,last_column_name],
+            "rows"      : [[first_raw_value,second_raw_value,...,last_raw_value],...]
+        }
+
+Send your data :
+                
+
+.. code:: python
+
+    import pyred
+    pyred.send_to_redshift({INSTANCE},data,replace=True)
+
+-  replace (default=True) argument allows you to replace or append data
+   in the table
+-  batch\_size (default=1000) argument also exists to send data in
+   batchs
