@@ -42,7 +42,7 @@ def send_to_redshift(instance, data, replace=True, batch_size=1000):
 
         inserting_request = '''INSERT INTO ''' + data["table_name"] + ''' (''' + ", ".join(
             data["columns_name"]) + ''') VALUES ''' + temp_string + ''';'''
-        if not final_data:
+        if final_data:
             print("Execute")
             cursor.execute(inserting_request, final_data)
         index = index + 1
