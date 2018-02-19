@@ -7,29 +7,12 @@ A python package to easily send data to Amazon Redshift
 1) Installation
 '''''''''''''''
 
-1) Open a terminal and clone the report where you want
+Open a terminal and install pyred package
                                                    
 ::
 
-    git clone https://github.com/pflucet/pyred
+    pip install pyred
 
-2) Go to the pyred folder you just cloned
-
-::
-
-    cd pyred/
-
-3) Install package
-
-::
-
-    pip install .
-
-*or*
-
-::
-
-    python setup.py install
 
 2) Use
 ''''''

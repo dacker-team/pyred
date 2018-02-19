@@ -11,12 +11,12 @@ with open('LICENSE') as f:
 
 setup(
     name='pyred',
-    version='0.0.3',
+    version='0.0.4',
     description='Easily send data to Amazon Redshift',
     long_description=readme,
     author='Dacker',
     author_email='hello@dacker.co',
-    url='https://github.com/pflucet/pyred',
+    url='https://github.com/dacker-team/pyred',
     license=license,
     keywords='send data amazon redshift easy',
     packages=find_packages(exclude=('tests', 'docs')),
