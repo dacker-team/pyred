@@ -1,9 +1,6 @@
 # -*- coding: utf-8 -*-
 import psycopg2 as psycopg2
 import redshift_credentials
-import datetime
-
-connection_kwargs = redshift_credentials.credential("MH")
 
 redshift_types = ["SMALLINT", "INTEGER", "BIGINT", "DECIMAL", "REAL", "DOUBLE PRECISION", "BOOLEAN", "CHAR", "VARCHAR",
                   "DATE", "TIMESTAMP", "TIMESTAMPTZ", "INT2", "INT4", "INT8", "NUMERIC", "FLOAT", "FLOAT4", "FLOAT8",
@@ -11,6 +8,7 @@ redshift_types = ["SMALLINT", "INTEGER", "BIGINT", "DECIMAL", "REAL", "DOUBLE PR
 
 
 def execute_query(instance, query):
+    connection_kwargs = redshift_credentials.credential(instance)
     con = psycopg2.connect(**connection_kwargs)
     cursor = con.cursor()
     cursor.execute(query)
@@ -72,8 +70,6 @@ def format_create_table(instance, data, primary_key, types=None):
         col["example"] = example
         col["type"] = def_type(instance, name, example, types)
         params[name] = col
-
-    print(params)
 
     query = """"""
     query = query + "CREATE TABLE " + table_name + " ("
