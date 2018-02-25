@@ -81,7 +81,7 @@ pyred has a *create_table* function with this signature:
     import pyred
     pyred.create_table({INSTANCE}, data, primary_key=(), types=None)
 
-This function is automatically called in the *send_to_redshift* function if the table is not created. You can also call it with the "create_boolean" parameter of the *send_to_reshift* function or by setting primary_key or types parameters.
+This function is automatically called in the *send_to_redshift* function if the table is not created. You can also call it with the "create_boolean" parameter of the *send_to_reshift* function or by setting "primary_key" or "types" parameters.
 
--  primary_key : if you have columns_name=[a,b,c] and you want to set b as primary key, set primary_key=(b)
--  types: *create_table* function guess types of each column. But you can set a "types" argument. It is a dictionary like {'b': 'VARCHAR(12)'} or  {'b': 'INTEGER NOT NULL'}.
+-  primary_key : if you have 3 columns (ie: columns_name=[a,b,c]) and you want to set b as primary key, set primary_key=(b)
+-  types: *create_table* function guesses types of each column. But you can set a "types" argument. It is a dictionary like {'b': 'VARCHAR(12)'} or  {'b': 'INTEGER NOT NULL'} to set types of b column.
