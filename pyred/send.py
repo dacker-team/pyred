@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 import psycopg2 as psycopg2
-from . import redshift_credentials
+import create
+import redshift_credentials
 
 
-def send_to_redshift(instance, data, replace=True, batch_size=1000):
+def send_to_redshift(instance, data, replace=True, batch_size=1000, types=None, primary_key=(), create_boolean=False):
     """
     data = {
         "table_name" 	: 'name_of_the_redshift_schema' + '.' + 'name_of_the_redshift_table' #Must already exist,
@@ -13,6 +14,13 @@ def send_to_redshift(instance, data, replace=True, batch_size=1000):
     """
 
     connection_kwargs = redshift_credentials.credential(instance)
+
+    if (not create.existing_test(instance, data["table_name"])) or (types is not None) or (primary_key != ()):
+        create_boolean = True
+
+    if create_boolean:
+        create.create_table(instance, data, primary_key, types)
+
     print("Initiate send_to_redshift...")
     con = psycopg2.connect(**connection_kwargs)
     cursor = con.cursor()
@@ -23,13 +31,13 @@ def send_to_redshift(instance, data, replace=True, batch_size=1000):
         cursor.execute(cleaning_request)
         print("Cleaning Done")
 
-    test = True
+    boolean = True
     index = 0
-    while test:
+    while boolean:
         temp_row = []
         for i in range(batch_size):
             if not data["rows"]:
-                test = False
+                boolean = False
                 continue
             temp_row.append(data["rows"].pop())
 
@@ -54,3 +62,15 @@ def send_to_redshift(instance, data, replace=True, batch_size=1000):
 
     print("data sent to redshift")
     return 0
+
+
+def test():
+    data = {
+        "table_name": 'test.test2',
+        "columns_name": ["nom", "prenom", "age", "date"],
+        "rows": [["pif", "pif", 12, "2017-02-23"]]
+    }
+    primary_key = ()
+
+    types = None
+    send_to_redshift("MH", data, types, primary_key, create_boolean=False, replace=True, batch_size=1000)

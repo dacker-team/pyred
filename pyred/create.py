@@ -17,6 +17,15 @@ def execute_query(instance, query):
     con.close()
 
 
+def existing_test(instance, table_name):
+    try:
+        query = "SELECT * FROM " + table_name
+        execute_query(instance, query)
+        return True
+    except psycopg2.ProgrammingError:
+        return False
+
+
 def detect_type(instance, example):
     try:
         query = "SELECT CAST('%s' as TIMESTAMP)" % example
@@ -26,14 +35,14 @@ def detect_type(instance, example):
     except psycopg2.Error:
         pass
 
-    if type(example) is str:
+    if type(example) == str:
         return "VARCHAR(256)"
-    elif type(example) is int:
+    elif type(example) == int:
         if example > 2147483646:
             return "BIGINT"
         else:
             return "INTEGER"
-    elif type(example) is float:
+    elif type(example) == float:
         return "FLOAT"
     else:
         print("Cannot find type for %s \nPlease define it in 'types' dictionnary argument" % example)
@@ -47,7 +56,7 @@ def def_type(instance, name, example, types=None):
     try:
         result = types[name]
         if result.split('(')[0] not in redshift_types:
-            boolean = raw_input('%s is apparently not in RedShift Types, do you want to continue (y or n) ?\n' % result)
+            boolean = input('%s is apparently not in RedShift Types, do you want to continue (y or n) ?\n' % result)
             if boolean.lower() in ('y', 'yes'):
                 return result
             else:
@@ -73,7 +82,7 @@ def format_create_table(instance, data, primary_key, types=None):
 
     query = """"""
     query = query + "CREATE TABLE " + table_name + " ("
-    col = params.keys()
+    col = list(params.keys())
     pk_bool = (primary_key == ())
     for i in range(len(col)):
         k = col[i]
@@ -92,23 +101,48 @@ def format_create_table(instance, data, primary_key, types=None):
     return query
 
 
+def set_primary_key(primary_key, data):
+    if primary_key == ():
+        primary_key = []
+        prop = input("Do you really want not to set primary keys ? \n" +
+                     "Columns names are : " + str(data["columns_name"]) + "\n" +
+                     "You can write it down primary keys here separated by comma \n")
+        if prop != '':
+            for element in prop.split(","):
+                columns_name = list(map(lambda x: x.lower(), data["columns_name"]))
+                for_test = element.lower().strip()
+                if for_test in columns_name:
+                    primary_key.append(for_test)
+                else:
+                    print("%s not in columns_name" % for_test)
+        primary_key = tuple(primary_key) if len(primary_key) != 1 else primary_key[0]
+        print("Wait...")
+    if type(primary_key) == str:
+        primary_key = "(" + str(primary_key) + ")"
+    return primary_key
+
+
 def create_table(instance, data, primary_key=(), types=None):
+    primary_key = set_primary_key(primary_key, data)
     query = format_create_table(instance, data, primary_key, types)
 
     def ex_query(q):
         return execute_query(instance, q)
 
-    boolean = raw_input(
-        "Do you really want to execute this query (y or n) ? \n You can modify attributes in primary_key or types arguments \n")
+    boolean = input(
+        "You can modify the query with 'primary_key' and 'types' arguments \n" +
+        "Do you really want to execute this query (y or n) ? \n"
+        )
     if boolean.lower() in ('y', 'yes'):
         try:
             ex_query(query)
-        except psycopg2.ProgrammingError, e:
+        except psycopg2.ProgrammingError as e:
+            e = str(e)
             if e[:7] == "schema ":
                 ex_query("CREATE SCHEMA " + data['table_name'].split(".")[0])
                 ex_query(query)
-            elif e[0][:9] == "Relation ":
-                boolean = raw_input("Do you really want to drop table %s (y or n) ? \n" % data['table_name'])
+            elif e[:9] == "Relation ":
+                boolean = input("Do you really want to drop table %s (y or n) ? \n" % data['table_name'])
                 if boolean.lower() in ('y', 'yes'):
                     ex_query("DROP TABLE " + data['table_name'])
                     ex_query(query)
@@ -124,7 +158,7 @@ def test():
     data = {
         "table_name": 'test.test',
         "columns_name": ["nom", "prenom", "age", "date"],
-        "rows": [["pif", "pif", {}, "2017-02-23"]]
+        "rows": [["pif", "pif", 12, "2017-02-23"]]
     }
     primary_key = ()
 
