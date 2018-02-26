@@ -11,7 +11,7 @@ with open('LICENSE') as f:
 
 setup(
     name='pyred',
-    version='0.0.8',
+    version='0.0.9',
     description='Easily send data to Amazon Redshift',
     long_description=readme,
     author='Dacker',
