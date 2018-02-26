@@ -161,7 +161,7 @@ def create_table(instance, data, primary_key=(), types=None):
                 else:
                     exit()
             else:
-                print(e[:9])
+                print(e)
     else:
         exit()
 
