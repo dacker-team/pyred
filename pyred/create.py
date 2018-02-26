@@ -123,7 +123,7 @@ def set_primary_key(primary_key, data):
         print("Wait...")
     if type(primary_key) == str:
         primary_key = "(" + str(primary_key) + ")"
-    if len(primary_key) > 1:
+    elif len(primary_key) > 1:
         pk = '(' + primary_key[0]
         for p in primary_key[1:]:
             pk = pk + ',' + p
