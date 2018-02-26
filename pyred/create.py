@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import psycopg2 as psycopg2
-import redshift_credentials
+from . import redshift_credentials
 
 redshift_types = ["SMALLINT", "INTEGER", "BIGINT", "DECIMAL", "REAL", "DOUBLE PRECISION", "BOOLEAN", "CHAR", "VARCHAR",
                   "DATE", "TIMESTAMP", "TIMESTAMPTZ", "INT2", "INT4", "INT8", "NUMERIC", "FLOAT", "FLOAT4", "FLOAT8",

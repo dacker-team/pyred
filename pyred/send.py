@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import psycopg2 as psycopg2
-import create
-import redshift_credentials
+from . import create
+from . import redshift_credentials
 
 
 def send_to_redshift(instance, data, replace=True, batch_size=1000, types=None, primary_key=(), create_boolean=False):
