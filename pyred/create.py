@@ -26,7 +26,7 @@ def existing_test(instance, table_name):
         return False
 
 
-def detect_type(instance, example):
+def detect_type(instance, example, name):
     try:
         query = "SELECT CAST('%s' as TIMESTAMP)" % example
         execute_query(instance, query)
@@ -45,13 +45,17 @@ def detect_type(instance, example):
     elif type(example) == float:
         return "FLOAT"
     else:
-        print("Cannot find type for %s \nPlease define it in 'types' dictionnary argument" % example)
-        exit()
+        r = input("Cannot find type for %s \nPlease define it in 'types' dictionnary argument or type here\n" % name)
+        if not r:
+            exit()
+        else:
+            return r
 
 
 def def_type(instance, name, example, types=None):
+    print('Define type of %s...' % name)
     if not types:
-        return detect_type(instance, example)
+        return detect_type(instance, example, name)
 
     try:
         result = types[name]
@@ -64,7 +68,7 @@ def def_type(instance, name, example, types=None):
         else:
             return result
     except KeyError:
-        return detect_type(instance, example)
+        return detect_type(instance, example,name)
 
 
 def format_create_table(instance, data, primary_key, types=None):
@@ -115,10 +119,18 @@ def set_primary_key(primary_key, data):
                     primary_key.append(for_test)
                 else:
                     print("%s not in columns_name" % for_test)
-        primary_key = tuple(primary_key) if len(primary_key) != 1 else primary_key[0]
+
         print("Wait...")
     if type(primary_key) == str:
         primary_key = "(" + str(primary_key) + ")"
+    if len(primary_key) > 1:
+        pk = '(' + primary_key[0]
+        for p in primary_key[1:]:
+            pk = pk + ',' + p
+        pk = pk + ')'
+        primary_key = pk
+    else:
+        primary_key[0]
     return primary_key
 
 
