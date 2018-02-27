@@ -130,7 +130,7 @@ def set_primary_key(primary_key, data):
         pk = pk + ')'
         primary_key = pk
     else:
-        primary_key[0]
+        primary_key = primary_key[0]
     return primary_key
 
 
@@ -153,7 +153,7 @@ def create_table(instance, data, primary_key=(), types=None):
             if e[:7] == "schema ":
                 ex_query("CREATE SCHEMA " + data['table_name'].split(".")[0])
                 ex_query(query)
-            elif e[:9] == "Relation ":
+            elif e[:9].lower() == "relation ":
                 boolean = input("Do you really want to drop table %s (y or n) ? \n" % data['table_name'])
                 if boolean.lower() in ('y', 'yes'):
                     ex_query("DROP TABLE " + data['table_name'])
