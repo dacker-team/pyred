@@ -74,11 +74,11 @@ def def_type(instance, name, example, types=None):
 def format_create_table(instance, data, primary_key, types=None):
     table_name = data["table_name"]
     columns_name = data["columns_name"]
-    sample_row = data["rows"][0]
+    sample_row = data["rows"][0]  # IMPROVE : cf below
     params = {}
     for i in range(len(columns_name)):
         name = columns_name[i]
-        example = sample_row[i]
+        example = sample_row[i]  # SELECT A ROW WHERE value not NULL
         col = dict()
         col["example"] = example
         col["type"] = def_type(instance, name, example, types)
@@ -87,7 +87,6 @@ def format_create_table(instance, data, primary_key, types=None):
     query = """"""
     query = query + "CREATE TABLE " + table_name + " ("
     col = list(params.keys())
-    pk_bool = (primary_key == ())
     for i in range(len(col)):
         k = col[i]
         if (i == len(col) - 1) and pk_bool:
@@ -96,7 +95,7 @@ def format_create_table(instance, data, primary_key, types=None):
         else:
             query = query + "\n     " + k + ' ' + params[k]["type"] + ' ' + 'NULL ,' + " --example:" + str(
                 params[k]["example"]) + ''
-    if not pk_bool:
+    if primary_key is not None:
         query = query + '\n     ' + "PRIMARY KEY " + str(primary_key)
     else:
         query = query[:-1]
@@ -119,7 +118,8 @@ def set_primary_key(primary_key, data):
                     primary_key.append(for_test)
                 else:
                     print("%s not in columns_name" % for_test)
-
+        else:
+            return None
         print("Wait...")
     if type(primary_key) == str:
         primary_key = "(" + str(primary_key) + ")"
@@ -130,7 +130,7 @@ def set_primary_key(primary_key, data):
         pk = pk + ')'
         primary_key = pk
     else:
-        primary_key = primary_key[0]
+        primary_key = '(' + primary_key[0] + ')'
     return primary_key
 
 
