@@ -89,7 +89,7 @@ def format_create_table(instance, data, primary_key, types=None):
     col = list(params.keys())
     for i in range(len(col)):
         k = col[i]
-        if (i == len(col) - 1) and pk_bool:
+        if (i == len(col) - 1) and (primary_key is None):
             query = query + "\n     " + k + ' ' + params[k]["type"] + ' ' + 'NULL ' + " --example:" + str(
                 params[k]["example"]) + ''
         else:
