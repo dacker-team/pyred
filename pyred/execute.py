@@ -10,7 +10,10 @@ def execute_query(instance, query):
     cursor = con.cursor()
     cursor.execute(query)
     con.commit()
-    result = cursor.fetchall()
+    try:
+        result = cursor.fetchall()
+    except psycopg2.ProgrammingError:
+        result = None
     cursor.close()
     con.close()
     return result
