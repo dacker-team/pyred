@@ -71,14 +71,22 @@ def def_type(instance, name, example, types=None):
         return detect_type(instance, example,name)
 
 
+def find_sample_value(rows, i):
+    for row in rows:
+        value = row[i]
+        if value is not None:
+            return value
+    return None
+
+
 def format_create_table(instance, data, primary_key, types=None):
     table_name = data["table_name"]
     columns_name = data["columns_name"]
-    sample_row = data["rows"][0]  # IMPROVE : cf below
+    rows = data["rows"]
     params = {}
     for i in range(len(columns_name)):
         name = columns_name[i]
-        example = sample_row[i]  # SELECT A ROW WHERE value not NULL
+        example = find_sample_value(rows, i)
         col = dict()
         col["example"] = example
         col["type"] = def_type(instance, name, example, types)
