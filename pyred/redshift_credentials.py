@@ -11,5 +11,3 @@ def credential(instance):
         'password': os.environ[alias + "_PASSWORD"],
     }
     return connection_kwargs
-
-

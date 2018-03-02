@@ -1,7 +1,7 @@
 import psycopg2 as psycopg2
 from psycopg2.extras import RealDictCursor
 
-import redshift_credentials
+from . import redshift_credentials
 
 
 def execute_query(instance, query):

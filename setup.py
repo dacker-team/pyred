@@ -2,7 +2,6 @@
 
 from setuptools import setup, find_packages
 
-
 with open('README.rst') as f:
     readme = f.read()
 
@@ -11,7 +10,7 @@ with open('LICENSE') as f:
 
 setup(
     name='pyred',
-    version='0.0.15',
+    version='0.0.17',
     description='Easily send data to Amazon Redshift',
     long_description=readme,
     author='Dacker',
@@ -23,4 +22,3 @@ setup(
     python_requires='>=3',
 
 )
-

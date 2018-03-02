@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import psycopg2 as psycopg2
 
-from execute import execute_query
+from . import execute
 
 redshift_types = ["SMALLINT", "INTEGER", "BIGINT", "DECIMAL", "REAL", "DOUBLE PRECISION", "BOOLEAN", "CHAR", "VARCHAR",
                   "DATE", "TIMESTAMP", "TIMESTAMPTZ", "INT2", "INT4", "INT8", "NUMERIC", "FLOAT", "FLOAT4", "FLOAT8",
@@ -11,7 +11,7 @@ redshift_types = ["SMALLINT", "INTEGER", "BIGINT", "DECIMAL", "REAL", "DOUBLE PR
 def existing_test(instance, table_name):
     try:
         query = "SELECT * FROM " + table_name
-        execute_query(instance, query)
+        execute.execute_query(instance, query)
         return True
     except psycopg2.ProgrammingError:
         return False
@@ -20,7 +20,7 @@ def existing_test(instance, table_name):
 def detect_type(instance, example, name):
     try:
         query = "SELECT CAST('%s' as TIMESTAMP)" % example
-        execute_query(instance, query)
+        execute.execute_query(instance, query)
         return "TIMESTAMP"
 
     except psycopg2.Error:
@@ -59,7 +59,7 @@ def def_type(instance, name, example, types=None):
         else:
             return result
     except KeyError:
-        return detect_type(instance, example,name)
+        return detect_type(instance, example, name)
 
 
 def find_sample_value(rows, i):
@@ -138,12 +138,12 @@ def create_table(instance, data, primary_key=(), types=None):
     query = format_create_table(instance, data, primary_key, types)
 
     def ex_query(q):
-        return execute_query(instance, q)
+        return execute.execute_query(instance, q)
 
     boolean = input(
         "You can modify the query with 'primary_key' and 'types' arguments \n" +
         "Do you really want to execute this query (y or n) ? \n"
-        )
+    )
     if boolean.lower() in ('y', 'yes'):
         try:
             ex_query(query)
