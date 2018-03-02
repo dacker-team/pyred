@@ -1,20 +1,11 @@
 # -*- coding: utf-8 -*-
 import psycopg2 as psycopg2
-from . import redshift_credentials
+
+from execute import execute_query
 
 redshift_types = ["SMALLINT", "INTEGER", "BIGINT", "DECIMAL", "REAL", "DOUBLE PRECISION", "BOOLEAN", "CHAR", "VARCHAR",
                   "DATE", "TIMESTAMP", "TIMESTAMPTZ", "INT2", "INT4", "INT8", "NUMERIC", "FLOAT", "FLOAT4", "FLOAT8",
                   "BOOL", "CHARACTER", "NCHAR", "BPCHAR", "CHARACTER VARYING", "NVARCHAR", "TEXT"]
-
-
-def execute_query(instance, query):
-    connection_kwargs = redshift_credentials.credential(instance)
-    con = psycopg2.connect(**connection_kwargs)
-    cursor = con.cursor()
-    cursor.execute(query)
-    con.commit()
-    cursor.close()
-    con.close()
 
 
 def existing_test(instance, table_name):
