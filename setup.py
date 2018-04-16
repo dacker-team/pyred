@@ -2,6 +2,11 @@
 
 from setuptools import setup, find_packages
 
+from pip.req import parse_requirements
+
+reqs = parse_requirements("requirements.txt", session='hack')
+reqs = [str(ir.req) for ir in reqs]
+
 with open('README.rst') as f:
     readme = f.read()
 
@@ -10,7 +15,7 @@ with open('LICENSE') as f:
 
 setup(
     name='pyred',
-    version='0.1.0',
+    version='0.1.1',
     description='Easily send data to Amazon Redshift',
     long_description=readme,
     author='Dacker',
@@ -20,5 +25,5 @@ setup(
     keywords='send data amazon redshift easy',
     packages=find_packages(exclude=('tests', 'docs')),
     python_requires='>=3',
-
+    install_requires=reqs,
 )
