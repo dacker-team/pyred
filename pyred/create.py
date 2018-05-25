@@ -10,7 +10,7 @@ redshift_types = ["SMALLINT", "INTEGER", "BIGINT", "DECIMAL", "REAL", "DOUBLE PR
 
 def existing_test(instance, table_name):
     try:
-        query = "SELECT * FROM " + table_name
+        query = "SELECT COUNT(*) FROM " + table_name
         execute.execute_query(instance, query)
         return True
     except psycopg2.ProgrammingError:
