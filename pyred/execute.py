@@ -13,17 +13,28 @@ def execute_query(instance, query):
     # Create an SSH tunnel
     ssh_host = os.environ.get("SSH_%s_HOST" % instance)
     ssh_user = os.environ.get("SSH_%s_USER" % instance)
+    ssh_password = os.environ.get("SSH_%s_PASSWORD" % instance)
     ssh_path_private_key = os.environ.get("SSH_%s_PATH_PRIVATE_KEY" % instance)
-
+    print(ssh_path_private_key)
     if ssh_host:
-        tunnel = SSHTunnelForwarder(
-            (ssh_host, 22),
-            ssh_username=ssh_user,
-            ssh_private_key=ssh_path_private_key,
-            remote_bind_address=(
-            os.environ.get("RED_%s_HOST" % instance), int(os.environ.get("RED_%s_PORT" % instance))),
-            local_bind_address=('localhost', 6543),  # could be any available port
-        )
+        if ssh_password:
+            tunnel = SSHTunnelForwarder(
+                (ssh_host, 22),
+                ssh_username=ssh_user,
+                ssh_password=ssh_password,
+                remote_bind_address=(
+                    os.environ.get("RED_%s_HOST" % instance), int(os.environ.get("RED_%s_PORT" % instance))),
+                local_bind_address=('localhost', 6543),  # could be any available port
+            )
+        else:
+            tunnel = SSHTunnelForwarder(
+                (ssh_host, 22),
+                ssh_username=ssh_user,
+                ssh_private_key=ssh_path_private_key,
+                remote_bind_address=(
+                os.environ.get("RED_%s_HOST" % instance), int(os.environ.get("RED_%s_PORT" % instance))),
+                local_bind_address=('localhost', 6543),  # could be any available port
+            )
         # Start the tunnel
         try:
             tunnel.start()
