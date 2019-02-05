@@ -5,3 +5,5 @@ dist/
 pyred.egg-info/
 *pyc
 .DS_Store
+sandbox.py
+
