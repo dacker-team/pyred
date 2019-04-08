@@ -1,2 +1,2 @@
-sshtunnel
-psycopg2-binary==2.7.4
+sshtunnel>=0.1.4
+psycopg2-binary>=2.7.4

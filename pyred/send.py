@@ -2,10 +2,10 @@
 import os
 import psycopg2 as psycopg2
 import sshtunnel
-
+from sshtunnel import SSHTunnelForwarder
 from . import create
 from . import redshift_credentials
-from sshtunnel import SSHTunnelForwarder
+
 
 
 def send_to_redshift(
@@ -40,7 +40,6 @@ def send_to_redshift(
     ssh_host = os.environ.get("SSH_%s_HOST" % instance)
     ssh_user = os.environ.get("SSH_%s_USER" % instance)
     ssh_path_private_key = os.environ.get("SSH_%s_PATH_PRIVATE_KEY" % instance)
-
     if ssh_host:
         tunnel = SSHTunnelForwarder(
             (ssh_host, 22),

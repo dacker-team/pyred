@@ -15,7 +15,6 @@ def execute_query(instance, query):
     ssh_user = os.environ.get("SSH_%s_USER" % instance)
     ssh_password = os.environ.get("SSH_%s_PASSWORD" % instance)
     ssh_path_private_key = os.environ.get("SSH_%s_PATH_PRIVATE_KEY" % instance)
-    print(ssh_path_private_key)
     if ssh_host:
         if ssh_password:
             tunnel = SSHTunnelForwarder(
