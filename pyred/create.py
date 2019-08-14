@@ -26,6 +26,7 @@ def get_table_info(instance, table_and_schema_name, existing_tunnel):
         query = query + " AND TABLE_SCHEMA='%s'" % schema_name
     return execute_query(instance, query, existing_tunnel)
 
+
 def existing_test(instance, table_name, existing_tunnel=None):
     try:
         query = "SELECT COUNT(*) FROM " + table_name
@@ -78,7 +79,7 @@ def def_type(instance, name, example, existing_tunnel, types=None):
 
 def find_sample_value(df, name, i):
     if df[name].dtype == 'object':
-        df[name] = df[name].apply(lambda x: str(x))
+        df[name] = df[name].apply(lambda x: str(x) if x is not None else '')
         return df[name][df[name].map(len) == df[name].map(len).max()].iloc[0]
     else:
         rows = df.values.tolist()
@@ -94,6 +95,7 @@ def create_column(instance, data, column_name, existing_tunnel):
     rows = data["rows"]
     columns_name = data["columns_name"]
     df = pd.DataFrame(rows, columns=columns_name)
+    df = df.where((pd.notnull(df)), None)
     example = find_sample_value(df, column_name, columns_name.index(column_name))
     type = def_type(instance=instance, name=column_name, existing_tunnel=existing_tunnel, example=example)
     query = """
@@ -105,6 +107,7 @@ def create_column(instance, data, column_name, existing_tunnel):
     execute_query(instance, query, existing_tunnel)
     return query
 
+
 def create_columns(instance, data, existing_tunnel):
     table_name = data["table_name"]
     rows = data["rows"]
@@ -112,6 +115,7 @@ def create_columns(instance, data, existing_tunnel):
     infos = get_table_info(instance, table_name, existing_tunnel)
     all_column_in_table = [e['column_name'] for e in infos]
     df = pd.DataFrame(rows, columns=columns_name)
+    df = df.where((pd.notnull(df)), None)
     queries = []
     for column_name in columns_name:
         if column_name not in all_column_in_table:
@@ -183,6 +187,7 @@ def format_create_table(instance, data, existing_tunnel, types=None):
     rows = data["rows"]
     params = {}
     df = pd.DataFrame(rows, columns=columns_name)
+    df = df.where((pd.notnull(df)), None)
     for i in range(len(columns_name)):
         name = columns_name[i]
         example = find_sample_value(df, name, i)
