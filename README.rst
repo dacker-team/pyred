@@ -1,15 +1,16 @@
+=====
 pyred
 =====
 
 A python package to easily send data to Amazon Redshift
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+-------------------------------------------------------
 
 1) Installation
 '''''''''''''''
 
 Open a terminal and install pyred package
-                                                   
-::
+
+.. code:: bash
 
     pip install pyred
 
@@ -20,7 +21,7 @@ Open a terminal and install pyred package
 1) Be sure that you have set environment variables with Redshift credentials like this:
 
 
-::
+.. code:: bash
 
     export RED_{INSTANCE}_DATABASE=""
     export RED_{INSTANCE}_USERNAME=""

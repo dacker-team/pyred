@@ -16,7 +16,7 @@ def send_to_redshift(
         replace=True,
         batch_size=1000,
         types=None,
-        create_boolean=False):
+        existing_tunnel=None):
     """
     data = {
         "table_name" 	: 'name_of_the_redshift_schema' + '.' + 'name_of_the_redshift_table' #Must already exist,
@@ -29,10 +29,10 @@ def send_to_redshift(
         send_data_to_redshift(
             instance,
             data,
-            replace=True,
-            batch_size=1000,
-            types=None,
-            create_boolean=False)
+            replace=replace,
+            batch_size=batch_size,
+            types=types,
+            existing_tunnel=existing_tunnel)
     except Exception as e:
         if "value too long for type character" in str(e).lower():
             choose_columns_to_extend(instance, data_copy)
@@ -45,28 +45,28 @@ def send_to_redshift(
         send_to_redshift(
             instance,
             data,
-            replace=True,
-            batch_size=1000,
-            types=None,
-            create_boolean=False)
+            replace=replace,
+            batch_size=batch_size,
+            types=types,
+            existing_tunnel=existing_tunnel)
 
 
 def send_data_to_redshift(
         instance,
         data,
-        replace=True,
-        batch_size=1000,
-        types=None,
-        create_boolean=False):
+        replace,
+        batch_size,
+        types,
+        existing_tunnel):
     connection_kwargs = redshift_credentials.credential(instance)
     print("Initiate send_to_redshift...")
 
     print("Test to know if the destination table exists...")
-    if (not create.existing_test(instance, data["table_name"])) or (types is not None):
+    if not create.existing_test(instance, data["table_name"]):
         print("Destination table doesn't exist! Will be created")
         create_boolean = True
     else:
-
+        create_boolean = False
         print("Destination table exists well")
 
     if create_boolean:
@@ -77,20 +77,21 @@ def send_data_to_redshift(
     ssh_user = os.environ.get("SSH_%s_USER" % instance)
     ssh_path_private_key = os.environ.get("SSH_%s_PATH_PRIVATE_KEY" % instance)
     if ssh_host:
-        tunnel = SSHTunnelForwarder(
-            (ssh_host, 22),
-            ssh_username=ssh_user,
-            ssh_private_key=ssh_path_private_key,
-            remote_bind_address=(
-                os.environ.get("RED_%s_HOST" % instance), int(os.environ.get("RED_%s_PORT" % instance))),
-            local_bind_address=('localhost', 6543),  # could be any available port
-        )
-        # Start the tunnel
-        try:
-            tunnel.start()
-            print("Tunnel opened!")
-        except sshtunnel.HandlerSSHTunnelForwarderError:
-            pass
+        if not existing_tunnel:
+            tunnel = SSHTunnelForwarder(
+                (ssh_host, 22),
+                ssh_username=ssh_user,
+                ssh_private_key=ssh_path_private_key,
+                remote_bind_address=(
+                    os.environ.get("RED_%s_HOST" % instance), int(os.environ.get("RED_%s_PORT" % instance))),
+                local_bind_address=('localhost', 6543),  # could be any available port
+            )
+            # Start the tunnel
+            try:
+                tunnel.start()
+                print("Tunnel opened!")
+            except sshtunnel.HandlerSSHTunnelForwarderError:
+                pass
 
         connection_kwargs["host"] = "localhost"
         connection_kwargs["port"] = 6543
@@ -145,7 +146,7 @@ def send_data_to_redshift(
     cursor.close()
     con.close()
 
-    if ssh_host:
+    if ssh_host and not existing_tunnel:
         tunnel.close()
         print("Tunnel closed!")
 

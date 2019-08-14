@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>pyred</title>
+    <meta charset="utf-8" />
+</head>
+<body>
+    <section id="pyred">
+        <h1>pyred</h1>
+        <h2>A python package to easily send data to Amazon Redshift</h2>
+        <section id="installation">
+            <h1>1) Installation</h1>
+            <p>Open a terminal and install pyred package</p>
+            <pre data-language="bash">pip install pyred</pre>
+        </section>
+        <section id="use">
+            <h1>2) Use</h1>
+            <ol suffix=")" type="1">
+                <li>Be sure that you have set environment variables with Redshift credentials like this:</li>
+            </ol>
+            <pre data-language="bash"><span class="nb">export </span>RED_<span class="o">{</span>INSTANCE<span class="o">}</span><span class="nv">_DATABASE</span><span class="o">=</span><span class="s2">&quot;&quot;</span>
+<span class="nb">export </span>RED_<span class="o">{</span>INSTANCE<span class="o">}</span><span class="nv">_USERNAME</span><span class="o">=</span><span class="s2">&quot;&quot;</span>
+<span class="nb">export </span>RED_<span class="o">{</span>INSTANCE<span class="o">}</span><span class="nv">_HOST</span><span class="o">=</span><span class="s2">&quot;&quot;</span>
+<span class="nb">export </span>RED_<span class="o">{</span>INSTANCE<span class="o">}</span><span class="nv">_PORT</span><span class="o">=</span><span class="s2">&quot;&quot;</span>
+<span class="nb">export </span>RED_<span class="o">{</span>INSTANCE<span class="o">}</span><span class="nv">_PASSWORD</span><span class="o">=</span><span class="s2">&quot;&quot;</span></pre>
+            <ol suffix=")" start="2" type="1">
+                <li>Be also sure that your IP address is authorized for the redshift cluster/instance.</li>
+                <li>Prepare your data like that:</li>
+            </ol>
+            <pre data-language="python"><span class="n">data</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s">&quot;table_name&quot;</span>    <span class="p">:</span> <span class="s">&#39;name_of_the_redshift_schema&#39;</span> <span class="o">+</span> <span class="s">&#39;.&#39;</span> <span class="o">+</span> <span class="s">&#39;name_of_the_redshift_table&#39;</span>
+        <span class="s">&quot;columns_name&quot;</span>  <span class="p">:</span> <span class="p">[</span><span class="n">first_column_name</span><span class="p">,</span><span class="n">second_column_name</span><span class="p">,</span><span class="o">...</span><span class="p">,</span><span class="n">last_column_name</span><span class="p">],</span>
+        <span class="s">&quot;rows&quot;</span>      <span class="p">:</span> <span class="p">[[</span><span class="n">first_raw_value</span><span class="p">,</span><span class="n">second_raw_value</span><span class="p">,</span><span class="o">...</span><span class="p">,</span><span class="n">last_raw_value</span><span class="p">],</span><span class="o">...</span><span class="p">]</span>
+    <span class="p">}</span></pre>
+            <ol suffix=")" start="4" type="1">
+                <li>Send your data (use the same {INSTANCE} parameter as environment variables):</li>
+            </ol>
+            <pre data-language="python"><span class="kn">import</span> <span class="nn">pyred</span>
+<span class="n">pyred</span><span class="o">.</span><span class="n">send_to_redshift</span><span class="p">(</span><span class="n">instance</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">replace</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">types</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">primary_key</span><span class="o">=</span><span class="p">(),</span> <span class="n">create_boolean</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span></pre>
+            <ul>
+                <li>replace (default=True) argument allows you to replace or append data in the table</li>
+                <li>batch_size (default=1000) argument also exists to send data in batchs</li>
+                <li>types, primary_key and create_boolean are explained below</li>
+            </ul>
+        </section>
+        <section id="first-example">
+            <h1>3) First Example</h1>
+            <p>You have a table called dog in you animal scheme. This table has two columns : 'name' and 'size'. You want to add two dogs (= two rows) : Pif which is big and Milou which is small. <em>data</em> will be like that:</p>
+            <pre data-language="python"><span class="kn">import</span> <span class="nn">pyred</span>
+<span class="n">data</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s">&quot;table_name&quot;</span>    <span class="p">:</span> <span class="s">&#39;animal.dog&#39;</span>
+        <span class="s">&quot;columns_name&quot;</span>  <span class="p">:</span> <span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">,</span><span class="s">&#39;size&#39;</span><span class="p">],</span>
+        <span class="s">&quot;rows&quot;</span>      <span class="p">:</span> <span class="p">[[</span><span class="s">&#39;Pif&#39;</span><span class="p">,</span><span class="s">&#39;big&#39;</span><span class="p">],</span> <span class="p">[</span><span class="s">&#39;Milou&#39;</span><span class="p">,</span><span class="s">&#39;small&#39;</span><span class="p">]]</span>
+    <span class="p">}</span>
+<span class="n">pyred</span><span class="o">.</span><span class="n">send_to_redshift</span><span class="p">({</span><span class="n">INSTANCE</span><span class="p">},</span><span class="n">data</span><span class="p">)</span></pre>
+        </section>
+        <section id="function-create-table">
+            <h1>4) Function <em>create_table</em></h1>
+            <p>pyred has a <em>create_table</em> function with this signature:</p>
+            <pre data-language="python"><span class="kn">import</span> <span class="nn">pyred</span>
+<span class="n">pyred</span><span class="o">.</span><span class="n">create_table</span><span class="p">({</span><span class="n">INSTANCE</span><span class="p">},</span> <span class="n">data</span><span class="p">,</span> <span class="n">primary_key</span><span class="o">=</span><span class="p">(),</span> <span class="n">types</span><span class="o">=</span><span class="bp">None</span><span class="p">)</span></pre>
+            <p>This function is automatically called in the <em>send_to_redshift</em> function if the table is not created. You can also call it with the "create_boolean" parameter of the <em>send_to_reshift</em> function or by setting "primary_key" or "types" parameters.</p>
+            <ul>
+                <li>primary_key : if you have 3 columns (ie: columns_name=[a,b,c]) and you want to set b as primary key, set primary_key=(b)</li>
+                <li>types: <em>create_table</em> function guesses types of each column. But you can set a "types" argument. It is a dictionary like {'b': 'VARCHAR(12)'} or {'b': 'INTEGER NOT NULL'} to set types of b column.</li>
+            </ul>
+        </section>
+    </section>
+</body>
+</html>
