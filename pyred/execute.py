@@ -7,7 +7,7 @@ from sshtunnel import SSHTunnelForwarder
 from . import redshift_credentials
 
 
-def execute_query(instance, query):
+def execute_query(instance, query, existing_tunnel=None):
     connection_kwargs = redshift_credentials.credential(instance)
 
     # Create an SSH tunnel
@@ -16,30 +16,31 @@ def execute_query(instance, query):
     ssh_password = os.environ.get("SSH_%s_PASSWORD" % instance)
     ssh_path_private_key = os.environ.get("SSH_%s_PATH_PRIVATE_KEY" % instance)
     if ssh_host:
-        if ssh_password:
-            tunnel = SSHTunnelForwarder(
-                (ssh_host, 22),
-                ssh_username=ssh_user,
-                ssh_password=ssh_password,
-                remote_bind_address=(
-                    os.environ.get("RED_%s_HOST" % instance), int(os.environ.get("RED_%s_PORT" % instance))),
-                local_bind_address=('localhost', 6543),  # could be any available port
-            )
-        else:
-            tunnel = SSHTunnelForwarder(
-                (ssh_host, 22),
-                ssh_username=ssh_user,
-                ssh_private_key=ssh_path_private_key,
-                remote_bind_address=(
-                os.environ.get("RED_%s_HOST" % instance), int(os.environ.get("RED_%s_PORT" % instance))),
-                local_bind_address=('localhost', 6543),  # could be any available port
-            )
-        # Start the tunnel
-        try:
-            tunnel.start()
-            print("Tunnel opened!")
-        except sshtunnel.HandlerSSHTunnelForwarderError:
-            pass
+        if not existing_tunnel:
+            if ssh_password:
+                tunnel = SSHTunnelForwarder(
+                    (ssh_host, 22),
+                    ssh_username=ssh_user,
+                    ssh_password=ssh_password,
+                    remote_bind_address=(
+                        os.environ.get("RED_%s_HOST" % instance), int(os.environ.get("RED_%s_PORT" % instance))),
+                    local_bind_address=('localhost', 6543),  # could be any available port
+                )
+            else:
+                tunnel = SSHTunnelForwarder(
+                    (ssh_host, 22),
+                    ssh_username=ssh_user,
+                    ssh_private_key=ssh_path_private_key,
+                    remote_bind_address=(
+                        os.environ.get("RED_%s_HOST" % instance), int(os.environ.get("RED_%s_PORT" % instance))),
+                    local_bind_address=('localhost', 6543),  # could be any available port
+                )
+            # Start the tunnel
+            try:
+                tunnel.start()
+                print("Tunnel opened!")
+            except sshtunnel.HandlerSSHTunnelForwarderError:
+                pass
 
         connection_kwargs["host"] = "localhost"
         connection_kwargs["port"] = 6543
@@ -56,7 +57,7 @@ def execute_query(instance, query):
     cursor.close()
     con.close()
 
-    if ssh_host:
+    if ssh_host and not existing_tunnel:
         tunnel.close()
         print("Tunnel closed!")
 
