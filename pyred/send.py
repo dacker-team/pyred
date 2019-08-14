@@ -4,10 +4,10 @@ import os
 import psycopg2 as psycopg2
 import sshtunnel
 
-
+from pyred.tools.print_colors import C
 from pyred.tunnel import create_tunnel
 
-from pyred.create import choose_columns_to_extend, create_column
+from pyred.create import choose_columns_to_extend, create_column, create_columns
 
 from . import create
 from . import redshift_credentials
@@ -40,14 +40,13 @@ def send_to_redshift(
         if "value too long for type character" in str(e).lower():
             choose_columns_to_extend(instance, data_copy, existing_tunnel)
         elif "does not exist" in str(e).lower() and "column" in str(e).lower():
-            c = str(e).split("\"")[1]
-            create_column(instance, data_copy, c, existing_tunnel)
+            create_columns(instance, data_copy, existing_tunnel)
         else:
             print(e)
             return 0
         send_to_redshift(
             instance,
-            data,
+            data_copy,
             replace=replace,
             batch_size=batch_size,
             types=types,
@@ -62,7 +61,7 @@ def send_data_to_redshift(
         types,
         existing_tunnel):
     connection_kwargs = redshift_credentials.credential(instance)
-    print("Initiate send_to_redshift...")
+    print(C.WARNING + "Initiate send_to_redshift..." + C.ENDC)
 
     print("Test to know if the destination table exists...")
     if not create.existing_test(instance, data["table_name"], existing_tunnel):
@@ -95,12 +94,13 @@ def send_data_to_redshift(
 
     if replace:
         cleaning_request = '''DELETE FROM ''' + data["table_name"] + ''';'''
-        print("Cleaning")
+        print(C.WARNING + "Cleaning" + C.ENDC)
         cursor.execute(cleaning_request)
-        print("Cleaning Done")
+        print(C.OKGREEN + "[OK] Cleaning Done" + C.ENDC)
 
     boolean = True
     index = 0
+    total_rows = len(data["rows"])
     total_nb_batchs = len(data["rows"]) // batch_size + 1
     while boolean:
         temp_row = []
@@ -125,7 +125,7 @@ def send_data_to_redshift(
             except Exception as e:
                 cursor.close()
                 con.close()
-                if ssh_host:
+                if ssh_host and not existing_tunnel:
                     tunnel.close()
                     print("Tunnel closed!")
                 raise e
@@ -143,6 +143,6 @@ def send_data_to_redshift(
     if ssh_host and not existing_tunnel:
         tunnel.close()
         print("Tunnel closed!")
-
-    print("data sent to redshift")
+    print(C.HEADER + str(total_rows) + ' rows sent to Redshift' + C.ENDC)
+    print(C.OKGREEN + "[OK] Sent to redshift" + C.ENDC)
     return 0

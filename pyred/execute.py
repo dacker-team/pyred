@@ -4,6 +4,7 @@ import sshtunnel
 from psycopg2.extras import RealDictCursor
 from sshtunnel import SSHTunnelForwarder
 
+from pyred.tools.print_colors import C
 from pyred.tunnel import create_tunnel
 from . import redshift_credentials
 
@@ -34,7 +35,7 @@ def execute_query(instance, query, existing_tunnel=None):
     except Exception as e:
         cursor.close()
         con.close()
-        if ssh_host:
+        if ssh_host and not existing_tunnel:
             tunnel.close()
             print("Tunnel closed!")
         raise e
@@ -48,6 +49,6 @@ def execute_query(instance, query, existing_tunnel=None):
 
     if ssh_host and not existing_tunnel:
         tunnel.close()
-        print("Tunnel closed!")
+        print(C.BOLD + "Tunnel closed!" + C.ENDC)
 
-    return result
+    return [dict(r) for r in result] if result else result

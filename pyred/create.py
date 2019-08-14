@@ -10,6 +10,22 @@ redshift_types = ["SMALLINT", "INTEGER", "BIGINT", "DECIMAL", "REAL", "DOUBLE PR
                   "BOOL", "CHARACTER", "NCHAR", "BPCHAR", "CHARACTER VARYING", "NVARCHAR", "TEXT"]
 
 
+def get_table_info(instance, table_and_schema_name, existing_tunnel):
+    split = table_and_schema_name.split(".")
+    if len(split) == 1:
+        table_name = split[0]
+        schema_name = None
+
+    elif len(split) == 2:
+        table_name = split[1]
+        schema_name = split[0]
+    else:
+        raise Exception("Invalid table or schema name")
+    query = "SELECT column_name, data_type, character_maximum_length, is_nullable FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='%s'" % table_name
+    if schema_name:
+        query = query + " AND TABLE_SCHEMA='%s'" % schema_name
+    return execute_query(instance, query, existing_tunnel)
+
 def existing_test(instance, table_name, existing_tunnel=None):
     try:
         query = "SELECT COUNT(*) FROM " + table_name
@@ -88,6 +104,29 @@ def create_column(instance, data, column_name, existing_tunnel):
     print(query)
     execute_query(instance, query, existing_tunnel)
     return query
+
+def create_columns(instance, data, existing_tunnel):
+    table_name = data["table_name"]
+    rows = data["rows"]
+    columns_name = data["columns_name"]
+    infos = get_table_info(instance, table_name, existing_tunnel)
+    all_column_in_table = [e['column_name'] for e in infos]
+    df = pd.DataFrame(rows, columns=columns_name)
+    queries = []
+    for column_name in columns_name:
+        if column_name not in all_column_in_table:
+            example = find_sample_value(df, column_name, columns_name.index(column_name))
+            type_ = def_type(instance=instance, name=column_name, existing_tunnel=existing_tunnel, example=example)
+            query = """
+            alter table %s
+            add "%s" %s
+            default NULL
+            """ % (table_name, column_name, type_)
+            queries.append(query)
+    if queries:
+        query = '; '.join(queries)
+        execute_query(instance, query, existing_tunnel)
+    return 0
 
 
 def extend_column(instance, data, column_name, existing_tunnel):
