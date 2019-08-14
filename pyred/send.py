@@ -80,11 +80,11 @@ def send_data_to_redshift(
         if not existing_tunnel:
             tunnel = create_tunnel(instance)
             # Start the tunnel
-            try:
-                tunnel.start()
-                print("Tunnel opened!")
-            except sshtunnel.HandlerSSHTunnelForwarderError:
-                pass
+            # try:
+            #     tunnel.start()
+            #     print("Tunnel opened!")
+            # except sshtunnel.HandlerSSHTunnelForwarderError:
+            #     pass
 
         connection_kwargs["host"] = "localhost"
         connection_kwargs["port"] = 6543
@@ -142,7 +142,7 @@ def send_data_to_redshift(
 
     if ssh_host and not existing_tunnel:
         tunnel.close()
-        print("Tunnel closed!")
+        print(C.OKBLUE + "[>>>>>] Tunnel closed" + C.ENDC)
     print(C.HEADER + str(total_rows) + ' rows sent to Redshift' + C.ENDC)
     print(C.OKGREEN + "[OK] Sent to redshift" + C.ENDC)
     return 0
