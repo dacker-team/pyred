@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
+import copy
 import os
 import psycopg2 as psycopg2
 import sshtunnel
 from sshtunnel import SSHTunnelForwarder
+
+from pyred.create import choose_columns_to_extend, create_column
 from . import create
 from . import redshift_credentials
-
 
 
 def send_to_redshift(
@@ -14,7 +16,6 @@ def send_to_redshift(
         replace=True,
         batch_size=1000,
         types=None,
-        primary_key=(),
         create_boolean=False):
     """
     data = {
@@ -23,18 +24,53 @@ def send_to_redshift(
         "rows"		: [[first_raw_value,second_raw_value,...,last_raw_value],...]
     }
     """
+    data_copy = copy.deepcopy(data)
+    try:
+        send_data_to_redshift(
+            instance,
+            data,
+            replace=True,
+            batch_size=1000,
+            types=None,
+            create_boolean=False)
+    except Exception as e:
+        if "value too long for type character" in str(e).lower():
+            choose_columns_to_extend(instance, data_copy)
+        elif "does not exist" in str(e).lower() and "column" in str(e).lower():
+            c = str(e).split("\"")[1]
+            create_column(instance, data_copy, c)
+        else:
+            print(e)
+            return 0
+        send_to_redshift(
+            instance,
+            data,
+            replace=True,
+            batch_size=1000,
+            types=None,
+            create_boolean=False)
 
+
+def send_data_to_redshift(
+        instance,
+        data,
+        replace=True,
+        batch_size=1000,
+        types=None,
+        create_boolean=False):
     connection_kwargs = redshift_credentials.credential(instance)
     print("Initiate send_to_redshift...")
 
-    print("Test to know if the table exists...")
-    if (not create.existing_test(instance, data["table_name"])) or (types is not None) or (primary_key != ()):
+    print("Test to know if the destination table exists...")
+    if (not create.existing_test(instance, data["table_name"])) or (types is not None):
+        print("Destination table doesn't exist! Will be created")
         create_boolean = True
+    else:
 
-    print("Test to know if the table exists...OK")
+        print("Destination table exists well")
 
     if create_boolean:
-        create.create_table(instance, data, primary_key, types)
+        create.create_table(instance, data, types)
 
     # Create an SSH tunnel
     ssh_host = os.environ.get("SSH_%s_HOST" % instance)
@@ -89,7 +125,15 @@ def send_to_redshift(
         inserting_request = '''INSERT INTO ''' + data["table_name"] + ''' (''' + ", ".join(
             data["columns_name"]) + ''') VALUES ''' + temp_string + ''';'''
         if final_data:
-            cursor.execute(inserting_request, final_data)
+            try:
+                cursor.execute(inserting_request, final_data)
+            except Exception as e:
+                cursor.close()
+                con.close()
+                if ssh_host:
+                    tunnel.close()
+                    print("Tunnel closed!")
+                raise e
         index = index + 1
         percent = round(index * 100 / total_nb_batchs, 2)
         if percent < 100:
@@ -107,15 +151,3 @@ def send_to_redshift(
 
     print("data sent to redshift")
     return 0
-
-
-def test():
-    data = {
-        "table_name": 'test.test2',
-        "columns_name": ["nom", "prenom", "age", "date"],
-        "rows": [["pif", "pif", 12, "2017-02-23"]]
-    }
-    primary_key = ()
-
-    types = None
-    send_to_redshift("MH", data, types, primary_key, create_boolean=False, replace=True, batch_size=1000)

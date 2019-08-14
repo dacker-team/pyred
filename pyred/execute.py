@@ -47,7 +47,15 @@ def execute_query(instance, query):
     con = psycopg2.connect(**connection_kwargs, cursor_factory=RealDictCursor)
 
     cursor = con.cursor()
-    cursor.execute(query)
+    try:
+        cursor.execute(query)
+    except Exception as e:
+        cursor.close()
+        con.close()
+        if ssh_host:
+            tunnel.close()
+            print("Tunnel closed!")
+        raise e
     con.commit()
     try:
         result = cursor.fetchall()
