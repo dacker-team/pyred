@@ -8,19 +8,19 @@ redshift_types = ["SMALLINT", "INTEGER", "BIGINT", "DECIMAL", "REAL", "DOUBLE PR
                   "BOOL", "CHARACTER", "NCHAR", "BPCHAR", "CHARACTER VARYING", "NVARCHAR", "TEXT"]
 
 
-def existing_test(instance, table_name):
+def existing_test(instance, table_name, existing_tunnel=None):
     try:
         query = "SELECT COUNT(*) FROM " + table_name
-        execute.execute_query(instance, query)
+        execute.execute_query(instance, query, existing_tunnel)
         return True
     except psycopg2.ProgrammingError:
         return False
 
 
-def detect_type(instance, example, name):
+def detect_type(instance, example, name, existing_tunnel=None):
     try:
         query = "SELECT CAST('%s' as TIMESTAMP)" % example
-        execute.execute_query(instance, query)
+        execute.execute_query(instance, query, existing_tunnel)
         return "TIMESTAMP"
 
     except psycopg2.Error:
@@ -43,10 +43,10 @@ def detect_type(instance, example, name):
             return r
 
 
-def def_type(instance, name, example, types=None):
+def def_type(instance, name, example, types=None, existing_tunnel=None):
     print('Define type of %s...' % name)
     if not types:
-        return detect_type(instance, example, name)
+        return detect_type(instance, example, name, existing_tunnel)
 
     try:
         result = types[name]
@@ -59,7 +59,7 @@ def def_type(instance, name, example, types=None):
         else:
             return result
     except KeyError:
-        return detect_type(instance, example, name)
+        return detect_type(instance, example, name, existing_tunnel)
 
 
 def find_sample_value(rows, i):
@@ -70,7 +70,7 @@ def find_sample_value(rows, i):
     return None
 
 
-def format_create_table(instance, data, primary_key, types=None):
+def format_create_table(instance, data, primary_key, types=None, existing_tunnel=None):
     table_name = data["table_name"]
     columns_name = data["columns_name"]
     rows = data["rows"]
@@ -80,7 +80,7 @@ def format_create_table(instance, data, primary_key, types=None):
         example = find_sample_value(rows, i)
         col = dict()
         col["example"] = example
-        col["type"] = def_type(instance, name, example, types)
+        col["type"] = def_type(instance, name, example, types, existing_tunnel)
         params[name] = col
 
     query = """"""
@@ -133,12 +133,12 @@ def set_primary_key(primary_key, data):
     return primary_key
 
 
-def create_table(instance, data, primary_key=(), types=None):
+def create_table(instance, data, primary_key=(), types=None, existing_tunnel=None):
     primary_key = set_primary_key(primary_key, data)
-    query = format_create_table(instance, data, primary_key, types)
+    query = format_create_table(instance, data, primary_key, types, existing_tunnel)
 
     def ex_query(q):
-        return execute.execute_query(instance, q)
+        return execute.execute_query(instance, q, existing_tunnel)
 
     boolean = input(
         "You can modify the query with 'primary_key' and 'types' arguments \n" +

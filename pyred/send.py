@@ -3,6 +3,8 @@ import os
 import psycopg2 as psycopg2
 import sshtunnel
 from sshtunnel import SSHTunnelForwarder
+
+from pyred.tunnel import create_tunnel
 from . import create
 from . import redshift_credentials
 
@@ -28,28 +30,19 @@ def send_to_redshift(
     print("Initiate send_to_redshift...")
 
     print("Test to know if the table exists...")
-    if (not create.existing_test(instance, data["table_name"])) or (types is not None) or (primary_key != ()):
+    if (not create.existing_test(instance, data["table_name"]), existing_tunnel) or (types is not None) or (primary_key != ()):
         create_boolean = True
 
     print("Test to know if the table exists...OK")
 
     if create_boolean:
-        create.create_table(instance, data, primary_key, types)
+        create.create_table(instance, data, primary_key, types, existing_tunnel)
 
     # Create an SSH tunnel
     ssh_host = os.environ.get("SSH_%s_HOST" % instance)
-    ssh_user = os.environ.get("SSH_%s_USER" % instance)
-    ssh_path_private_key = os.environ.get("SSH_%s_PATH_PRIVATE_KEY" % instance)
     if ssh_host:
         if not existing_tunnel:
-            tunnel = SSHTunnelForwarder(
-                (ssh_host, 22),
-                ssh_username=ssh_user,
-                ssh_private_key=ssh_path_private_key,
-                remote_bind_address=(
-                    os.environ.get("RED_%s_HOST" % instance), int(os.environ.get("RED_%s_PORT" % instance))),
-                local_bind_address=('localhost', 6543),  # could be any available port
-            )
+            tunnel = create_tunnel(instance)
             # Start the tunnel
             try:
                 tunnel.start()
