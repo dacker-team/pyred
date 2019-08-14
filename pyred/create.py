@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
+import pandas as pd
 import psycopg2 as psycopg2
+from pyred.execute import execute_query
 
 from . import execute
 
@@ -17,7 +19,7 @@ def existing_test(instance, table_name, existing_tunnel=None):
         return False
 
 
-def detect_type(instance, example, name, existing_tunnel=None):
+def detect_type(instance, example, existing_tunnel=None):
     try:
         query = "SELECT CAST('%s' as TIMESTAMP)" % example
         execute.execute_query(instance, query, existing_tunnel)
@@ -26,61 +28,129 @@ def detect_type(instance, example, name, existing_tunnel=None):
     except psycopg2.Error:
         pass
 
-    if type(example) == str:
-        return "VARCHAR(256)"
-    elif type(example) == int:
+    if isinstance(example, str):
+        if len(example) >= 255:
+            return "VARCHAR(65000)"
+        return "VARCHAR(255)"
+    elif isinstance(example, bool):
+        return "BOOLEAN"
+    elif isinstance(example, int):
         if example > 2147483646:
             return "BIGINT"
         else:
             return "INTEGER"
-    elif type(example) == float:
+    elif isinstance(example, float):
         return "FLOAT"
     else:
-        r = input("Cannot find type for %s \nPlease define it in 'types' dictionnary argument or type here\n" % name)
-        if not r:
-            exit()
-        else:
-            return r
+        return "VARCHAR(255)"
 
 
-def def_type(instance, name, example, types=None, existing_tunnel=None):
+def def_type(instance, name, example, existing_tunnel, types=None):
     print('Define type of %s...' % name)
     if not types:
-        return detect_type(instance, example, name, existing_tunnel)
+        return detect_type(instance, example, existing_tunnel)
 
     try:
         result = types[name]
         if result.split('(')[0] not in redshift_types:
-            boolean = input('%s is apparently not in RedShift Types, do you want to continue (y or n) ?\n' % result)
-            if boolean.lower() in ('y', 'yes'):
-                return result
-            else:
-                exit()
+            return result
         else:
             return result
     except KeyError:
-        return detect_type(instance, example, name, existing_tunnel)
+        return detect_type(instance, example, existing_tunnel)
 
 
-def find_sample_value(rows, i):
-    for row in rows:
-        value = row[i]
-        if value is not None:
-            return value
-    return None
+def find_sample_value(df, name, i):
+    if df[name].dtype == 'object':
+        df[name] = df[name].apply(lambda x: str(x))
+        return df[name][df[name].map(len) == df[name].map(len).max()].iloc[0]
+    else:
+        rows = df.values.tolist()
+        for row in rows:
+            value = row[i]
+            if value is not None:
+                return value
+        return None
 
 
-def format_create_table(instance, data, primary_key, types=None, existing_tunnel=None):
+def create_column(instance, data, column_name, existing_tunnel):
+    table_name = data["table_name"]
+    rows = data["rows"]
+    columns_name = data["columns_name"]
+    df = pd.DataFrame(rows, columns=columns_name)
+    example = find_sample_value(df, column_name, columns_name.index(column_name))
+    type = def_type(instance=instance, name=column_name, existing_tunnel=existing_tunnel, example=example)
+    query = """
+    alter table %s
+    add column %s %s
+    default NULL;
+    """ % (table_name, column_name, type)
+    print(query)
+    execute_query(instance, query, existing_tunnel)
+    return query
+
+
+def extend_column(instance, data, column_name, existing_tunnel):
+    table_name = data["table_name"]
+    query = """
+    ALTER TABLE %(table_name)s ADD COLUMN %(new_column_name)s VARCHAR(65000);
+    UPDATE %(table_name)s SET  %(new_column_name)s = %(column_name)s;
+    ALTER TABLE %(table_name)s DROP COLUMN %(column_name)s CASCADE ;
+    ALTER TABLE %(table_name)s RENAME COLUMN %(new_column_name)s TO %(column_name)s;
+    """ % {
+        "table_name": table_name,
+        "column_name": column_name,
+        "new_column_name": column_name + "_new"
+    }
+    print(query)
+    execute_query(instance, query, existing_tunnel)
+    return query
+
+
+def get_columns_length(instance, schema_name, table_name, existing_tunnel):
+    query = """
+    SELECT column_name, character_maximum_length
+    FROM information_schema.columns
+    WHERE table_name='%s' and table_schema='%s'
+    AND character_maximum_length IS NOT NULL  
+    """ % (table_name, schema_name)
+    d = {}
+    r = execute_query(instance, query, existing_tunnel)
+    for i in r:
+        d[i["column_name"]] = i["character_maximum_length"]
+    return d
+
+
+def choose_columns_to_extend(instance, data, existing_tunnel):
+    table_name = data["table_name"].split('.')
+    columns_length = get_columns_length(instance, table_name=table_name[1], schema_name=table_name[0],
+                                        existing_tunnel=existing_tunnel)
+    rows = data["rows"]
+    columns_name = data["columns_name"]
+    df = pd.DataFrame(rows, columns=columns_name)
+
+    for c in columns_name:
+        example = find_sample_value(df, c, columns_name.index(c))
+        print(example)
+        if isinstance(example, str):
+            if len(example) >= 255:
+                if not columns_length.get(c) or columns_length.get(c) < len(example):
+                    extend_column(instance, data, c, existing_tunnel)
+
+
+def format_create_table(instance, data, existing_tunnel, types=None):
     table_name = data["table_name"]
     columns_name = data["columns_name"]
     rows = data["rows"]
     params = {}
+    df = pd.DataFrame(rows, columns=columns_name)
     for i in range(len(columns_name)):
         name = columns_name[i]
-        example = find_sample_value(rows, i)
+        example = find_sample_value(df, name, i)
         col = dict()
         col["example"] = example
-        col["type"] = def_type(instance, name, example, types, existing_tunnel)
+        col["type"] = def_type(instance=instance, name=name, existing_tunnel=existing_tunnel, example=example,
+                               types=types)
         params[name] = col
 
     query = """"""
@@ -88,14 +158,11 @@ def format_create_table(instance, data, primary_key, types=None, existing_tunnel
     col = list(params.keys())
     for i in range(len(col)):
         k = col[i]
-        if (i == len(col) - 1) and (primary_key is None):
-            query = query + "\n     " + k + ' ' + params[k]["type"] + ' ' + 'NULL ' + " --example:" + str(
-                params[k]["example"]) + ''
+        string_example = " --example:" + str(params[k]["example"])[:10] + ''
+        if i == len(col) - 1:
+            query = query + "\n     " + k + ' ' + params[k]["type"] + ' ' + 'NULL ' + string_example
         else:
-            query = query + "\n     " + k + ' ' + params[k]["type"] + ' ' + 'NULL ,' + " --example:" + str(
-                params[k]["example"]) + ''
-    if primary_key is not None:
-        query = query + '\n     ' + "PRIMARY KEY " + str(primary_key)
+            query = query + "\n     " + k + ' ' + params[k]["type"] + ' ' + 'NULL ,' + string_example
     else:
         query = query[:-1]
     query = query + "\n )"
@@ -103,77 +170,18 @@ def format_create_table(instance, data, primary_key, types=None, existing_tunnel
     return query
 
 
-def set_primary_key(primary_key, data):
-    if primary_key == ():
-        primary_key = []
-        prop = input("Do you really want not to set primary keys ? \n" +
-                     "Columns names are : " + str(data["columns_name"]) + "\n" +
-                     "You can write it down primary keys here separated by comma \n")
-        if prop != '':
-            for element in prop.split(","):
-                columns_name = list(map(lambda x: x.lower(), data["columns_name"]))
-                for_test = element.lower().strip()
-                if for_test in columns_name:
-                    primary_key.append(for_test)
-                else:
-                    print("%s not in columns_name" % for_test)
-        else:
-            return None
-        print("Wait...")
-    if type(primary_key) == str:
-        primary_key = "(" + str(primary_key) + ")"
-    elif len(primary_key) > 1:
-        pk = '(' + primary_key[0]
-        for p in primary_key[1:]:
-            pk = pk + ',' + p
-        pk = pk + ')'
-        primary_key = pk
-    else:
-        primary_key = '(' + primary_key[0] + ')'
-    return primary_key
-
-
-def create_table(instance, data, primary_key=(), types=None, existing_tunnel=None):
-    primary_key = set_primary_key(primary_key, data)
-    query = format_create_table(instance, data, primary_key, types, existing_tunnel)
+def create_table(instance, data, types=None, existing_tunnel=None):
+    query = format_create_table(instance, data, existing_tunnel, types=types)
 
     def ex_query(q):
         return execute.execute_query(instance, q, existing_tunnel)
 
-    boolean = input(
-        "You can modify the query with 'primary_key' and 'types' arguments \n" +
-        "Do you really want to execute this query (y or n) ? \n"
-    )
-    if boolean.lower() in ('y', 'yes'):
-        try:
+    try:
+        ex_query(query)
+    except psycopg2.ProgrammingError as e:
+        e = str(e)
+        if e[:7] == "schema ":
+            ex_query("CREATE SCHEMA " + data['table_name'].split(".")[0])
             ex_query(query)
-        except psycopg2.ProgrammingError as e:
-            e = str(e)
-            if e[:7] == "schema ":
-                ex_query("CREATE SCHEMA " + data['table_name'].split(".")[0])
-                ex_query(query)
-            elif e[:9].lower() == "relation ":
-                boolean = input("Do you really want to drop table %s (y or n) ? \n" % data['table_name'])
-                if boolean.lower() in ('y', 'yes'):
-                    ex_query("DROP TABLE " + data['table_name'])
-                    ex_query(query)
-                else:
-                    exit()
-            else:
-                print(e)
-    else:
-        exit()
-
-
-def test():
-    data = {
-        "table_name": 'test.test',
-        "columns_name": ["nom", "prenom", "age", "date"],
-        "rows": [["pif", "pif", 12, "2017-02-23"]]
-    }
-    primary_key = ()
-
-    types = {
-        'nom': 'VARCHAR(12)',
-    }
-    create_table('MH', data, primary_key, types)
+        else:
+            print(e)
