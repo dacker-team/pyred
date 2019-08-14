@@ -37,7 +37,7 @@ def execute_query(instance, query, existing_tunnel=None):
         con.close()
         if ssh_host and not existing_tunnel:
             tunnel.close()
-            print(C.BOLD + "Tunnel closed!" + C.ENDC)
+            print(C.OKBLUE + "[>>>>>] Tunnel closed" + C.ENDC)
         raise e
     con.commit()
     try:
@@ -49,6 +49,6 @@ def execute_query(instance, query, existing_tunnel=None):
 
     if ssh_host and not existing_tunnel:
         tunnel.close()
-        print(C.BOLD + "Tunnel closed!" + C.ENDC)
+        print(C.OKBLUE + "[>>>>>] Tunnel closed" + C.ENDC)
 
     return [dict(r) for r in result] if result else result

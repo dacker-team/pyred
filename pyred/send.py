@@ -127,7 +127,7 @@ def send_data_to_redshift(
                 con.close()
                 if ssh_host and not existing_tunnel:
                     tunnel.close()
-                    print(C.BOLD + "Tunnel closed!" + C.ENDC)
+                    print(C.OKBLUE + "[>>>>>] Tunnel closed" + C.ENDC)
                 raise e
         index = index + 1
         percent = round(index * 100 / total_nb_batchs, 2)
