@@ -17,13 +17,6 @@ def execute_query(instance, query, existing_tunnel=None):
     if ssh_host:
         if not existing_tunnel:
             tunnel = create_tunnel(instance)
-            # Start the tunnel
-            # try:
-            #     tunnel.start()
-            #     print("Tunnel opened!")
-            # except sshtunnel.HandlerSSHTunnelForwarderError:
-            #     pass
-
         connection_kwargs["host"] = "localhost"
         connection_kwargs["port"] = 6543
 
