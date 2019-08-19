@@ -118,7 +118,7 @@ def send_data_to_redshift(
             except Exception as e:
                 cursor.close()
                 con.close()
-                if ssh_host and not existing_tunnel:
+                if ssh_host and not existing_tunnel and tunnel:
                     tunnel.close()
                     print(C.OKBLUE + "[>>>>>] Tunnel closed" + C.ENDC)
                 raise e
