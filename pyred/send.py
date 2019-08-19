@@ -133,7 +133,7 @@ def send_data_to_redshift(
     cursor.close()
     con.close()
 
-    if ssh_host and not existing_tunnel:
+    if ssh_host and not existing_tunnel and tunnel:
         tunnel.close()
         print(C.OKBLUE + "[>>>>>] Tunnel closed" + C.ENDC)
     print(C.HEADER + str(total_rows) + ' rows sent to Redshift' + C.ENDC)

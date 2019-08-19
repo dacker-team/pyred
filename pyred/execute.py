@@ -40,7 +40,7 @@ def execute_query(instance, query, existing_tunnel=None):
     cursor.close()
     con.close()
 
-    if ssh_host and not existing_tunnel:
+    if ssh_host and not existing_tunnel and tunnel:
         tunnel.close()
         print(C.OKBLUE + "[>>>>>] Tunnel closed" + C.ENDC)
 
