@@ -29,5 +29,5 @@ def create_tunnel(instance):
         print(C.OKBLUE + 'Tunnel opened and started [<<<<<]' + C.ENDC)
         return tunnel
     except HandlerSSHTunnelForwarderError:
-        print(C.OKBLUE + HandlerSSHTunnelForwarderError + ' [<<<<<]' + C.ENDC)
+        print(C.OKBLUE + 'HandlerSSHTunnelForwarderError' + ' [<<<<<]' + C.ENDC)
         return None
