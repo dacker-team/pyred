@@ -73,7 +73,7 @@ def find_sample_value(df, name, i):
         return None
 
 
-def create_column(instance, data, column_name):
+def create_column(instance, data, column_name, other_table_to_update):
     table_name = data["table_name"]
     rows = data["rows"]
     columns_name = data["columns_name"]
@@ -81,17 +81,20 @@ def create_column(instance, data, column_name):
     example = find_sample_value(df, column_name, columns_name.index(column_name))
     type = def_type(instance, column_name, example)
     query = """
-    alter table %s
-    add column %s %s
+    alter table %(table_name)s
+    add column %(column_name)s %(type)s
     default NULL;
-    """ % (table_name, column_name, type)
+    alter table %(other_table_to_update)s
+    add column %(column_name)s %(type)s
+    default NULL;
+    """ % {"table_name": table_name, "column_name": columns_name, "type": type,
+           "other_table_to_update": other_table_to_update}
     print(query)
     execute_query(instance, query)
     return query
 
 
-def extend_column(instance, data, column_name):
-    table_name = data["table_name"]
+def extend_column(instance, table_name, column_name):
     query = """
     ALTER TABLE %(table_name)s ADD COLUMN %(new_column_name)s VARCHAR(65000);
     UPDATE %(table_name)s SET  %(new_column_name)s = %(column_name)s;
@@ -121,7 +124,7 @@ def get_columns_length(instance, schema_name, table_name):
     return d
 
 
-def choose_columns_to_extend(instance, data):
+def choose_columns_to_extend(instance, data, other_table_to_update):
     table_name = data["table_name"].split('.')
     columns_length = get_columns_length(instance, table_name=table_name[1], schema_name=table_name[0])
     rows = data["rows"]
@@ -134,7 +137,8 @@ def choose_columns_to_extend(instance, data):
         if isinstance(example, str):
             if len(example) >= 255:
                 if not columns_length.get(c) or columns_length.get(c) < len(example):
-                    extend_column(instance, data, c)
+                    extend_column(instance=instance, table_name=table_name, column_name=c)
+                    extend_column(instance=instance, table_name=other_table_to_update, column_name=c)
 
 
 def format_create_table(instance, data, types=None):

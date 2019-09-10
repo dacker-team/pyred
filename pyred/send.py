@@ -16,7 +16,9 @@ def send_to_redshift(
         replace=True,
         batch_size=1000,
         types=None,
-        existing_tunnel=None):
+        existing_tunnel=None,
+        other_table_to_update=None
+        ):
     """
     data = {
         "table_name" 	: 'name_of_the_redshift_schema' + '.' + 'name_of_the_redshift_table' #Must already exist,
@@ -35,10 +37,14 @@ def send_to_redshift(
             existing_tunnel=existing_tunnel)
     except Exception as e:
         if "value too long for type character" in str(e).lower():
-            choose_columns_to_extend(instance, data_copy)
+            choose_columns_to_extend(
+                instance=instance,
+                data=data_copy,
+                other_table_to_update=other_table_to_update
+            )
         elif "does not exist" in str(e).lower() and "column" in str(e).lower():
             c = str(e).split("\"")[1]
-            create_column(instance, data_copy, c)
+            create_column(instance, data_copy, c, other_table_to_update)
         else:
             print(e)
             return 0
@@ -48,7 +54,8 @@ def send_to_redshift(
             replace=replace,
             batch_size=batch_size,
             types=types,
-            existing_tunnel=existing_tunnel)
+            existing_tunnel=existing_tunnel
+        )
 
 
 def send_data_to_redshift(
