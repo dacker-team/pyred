@@ -166,7 +166,7 @@ def choose_columns_to_extend(instance, data, existing_tunnel, other_table_to_upd
         if isinstance(example, str):
             if len(example) >= 255:
                 if not columns_length.get(c) or columns_length.get(c) < len(example):
-                    extend_column(instance=instance, table_name=table_name, column_name=c, existing_tunnel=existing_tunnel)
+                    extend_column(instance=instance, table_name=data["table_name"], column_name=c, existing_tunnel=existing_tunnel)
                     if other_table_to_update:
                         extend_column(instance=instance, table_name=other_table_to_update, column_name=c, existing_tunnel=existing_tunnel)
 
