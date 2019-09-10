@@ -83,12 +83,14 @@ def create_column(instance, data, column_name, other_table_to_update):
     query = """
     alter table %(table_name)s
     add column %(column_name)s %(type)s
-    default NULL;
-    alter table %(other_table_to_update)s
-    add column %(column_name)s %(type)s
-    default NULL;
-    """ % {"table_name": table_name, "column_name": columns_name, "type": type,
-           "other_table_to_update": other_table_to_update}
+    default NULL; """ % {"table_name": table_name, "column_name": columns_name, "type": type}
+    if other_table_to_update:
+        query = query + """
+        alter table %(other_table_to_update)s
+        add column %(column_name)s %(type)s
+        default NULL;
+        """ % {"column_name": columns_name, "type": type, "other_table_to_update": other_table_to_update}
+
     print(query)
     execute_query(instance, query)
     return query
@@ -138,7 +140,8 @@ def choose_columns_to_extend(instance, data, other_table_to_update):
             if len(example) >= 255:
                 if not columns_length.get(c) or columns_length.get(c) < len(example):
                     extend_column(instance=instance, table_name=table_name, column_name=c)
-                    extend_column(instance=instance, table_name=other_table_to_update, column_name=c)
+                    if other_table_to_update:
+                        extend_column(instance=instance, table_name=other_table_to_update, column_name=c)
 
 
 def format_create_table(instance, data, types=None):
