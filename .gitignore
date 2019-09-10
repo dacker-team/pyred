@@ -6,4 +6,4 @@ pyred.egg-info/
 *pyc
 .DS_Store
 sandbox.py
-
+ssh_path_private_key

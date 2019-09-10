@@ -3,9 +3,12 @@ import copy
 import os
 import psycopg2 as psycopg2
 import sshtunnel
-from sshtunnel import SSHTunnelForwarder
 
-from pyred.create import choose_columns_to_extend, create_column
+from pyred.tools.print_colors import C
+from pyred.tunnel import create_tunnel
+
+from pyred.create import choose_columns_to_extend, create_columns
+
 from . import create
 from . import redshift_credentials
 
@@ -40,17 +43,17 @@ def send_to_redshift(
             choose_columns_to_extend(
                 instance=instance,
                 data=data_copy,
-                other_table_to_update=other_table_to_update
+                other_table_to_update=other_table_to_update,
+                existing_tunnel=existing_tunnel
             )
         elif "does not exist" in str(e).lower() and "column" in str(e).lower():
-            c = str(e).split("\"")[1]
-            create_column(instance, data_copy, c, other_table_to_update)
+            create_columns(instance=instance, data=data_copy, existing_tunnel=existing_tunnel, other_table_to_update=other_table_to_update)
         else:
             print(e)
             return 0
         send_to_redshift(
             instance,
-            data,
+            data_copy,
             replace=replace,
             batch_size=batch_size,
             types=types,
@@ -66,10 +69,10 @@ def send_data_to_redshift(
         types,
         existing_tunnel):
     connection_kwargs = redshift_credentials.credential(instance)
-    print("Initiate send_to_redshift...")
+    print(C.WARNING + "Initiate send_to_redshift..." + C.ENDC)
 
     print("Test to know if the destination table exists...")
-    if not create.existing_test(instance, data["table_name"]):
+    if not create.existing_test(instance, data["table_name"], existing_tunnel):
         print("Destination table doesn't exist! Will be created")
         create_boolean = True
     else:
@@ -77,29 +80,13 @@ def send_data_to_redshift(
         print("Destination table exists well")
 
     if create_boolean:
-        create.create_table(instance, data, types)
+        create.create_table(instance, data, types, existing_tunnel)
 
     # Create an SSH tunnel
     ssh_host = os.environ.get("SSH_%s_HOST" % instance)
-    ssh_user = os.environ.get("SSH_%s_USER" % instance)
-    ssh_path_private_key = os.environ.get("SSH_%s_PATH_PRIVATE_KEY" % instance)
     if ssh_host:
         if not existing_tunnel:
-            tunnel = SSHTunnelForwarder(
-                (ssh_host, 22),
-                ssh_username=ssh_user,
-                ssh_private_key=ssh_path_private_key,
-                remote_bind_address=(
-                    os.environ.get("RED_%s_HOST" % instance), int(os.environ.get("RED_%s_PORT" % instance))),
-                local_bind_address=('localhost', 6543),  # could be any available port
-            )
-            # Start the tunnel
-            try:
-                tunnel.start()
-                print("Tunnel opened!")
-            except sshtunnel.HandlerSSHTunnelForwarderError:
-                pass
-
+            tunnel = create_tunnel(instance)
         connection_kwargs["host"] = "localhost"
         connection_kwargs["port"] = 6543
 
@@ -108,12 +95,13 @@ def send_data_to_redshift(
 
     if replace:
         cleaning_request = '''DELETE FROM ''' + data["table_name"] + ''';'''
-        print("Cleaning")
+        print(C.WARNING + "Cleaning" + C.ENDC)
         cursor.execute(cleaning_request)
-        print("Cleaning Done")
+        print(C.OKGREEN + "[OK] Cleaning Done" + C.ENDC)
 
     boolean = True
     index = 0
+    total_rows = len(data["rows"])
     total_nb_batchs = len(data["rows"]) // batch_size + 1
     while boolean:
         temp_row = []
@@ -138,9 +126,9 @@ def send_data_to_redshift(
             except Exception as e:
                 cursor.close()
                 con.close()
-                if ssh_host:
+                if ssh_host and not existing_tunnel and tunnel:
                     tunnel.close()
-                    print("Tunnel closed!")
+                    print(C.OKBLUE + "[>>>>>] Tunnel closed" + C.ENDC)
                 raise e
         index = index + 1
         percent = round(index * 100 / total_nb_batchs, 2)
@@ -153,9 +141,9 @@ def send_data_to_redshift(
     cursor.close()
     con.close()
 
-    if ssh_host and not existing_tunnel:
+    if ssh_host and not existing_tunnel and tunnel:
         tunnel.close()
-        print("Tunnel closed!")
-
-    print("data sent to redshift")
+        print(C.OKBLUE + "[>>>>>] Tunnel closed" + C.ENDC)
+    print(C.HEADER + str(total_rows) + ' rows sent to Redshift' + C.ENDC)
+    print(C.OKGREEN + "[OK] Sent to redshift" + C.ENDC)
     return 0
