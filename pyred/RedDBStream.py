@@ -1,0 +1,138 @@
+import copy
+
+import dbstream
+import psycopg2
+from psycopg2.extras import RealDictCursor
+
+from pyred.core.Column import choose_columns_to_extend
+from pyred.core.Table import create_table, create_columns
+from pyred.core.tools.print_colors import C
+
+
+class RedDBStream(dbstream.DBStream):
+    def __init__(self, instance_name):
+        super().__init__(instance_name)
+        self.instance_type_prefix = "RED"
+        self.ssh_init_port = 6543
+
+    def execute_query(self, query):
+        connection_kwargs = self.credentials()
+        con = psycopg2.connect(**connection_kwargs, cursor_factory=RealDictCursor)
+
+        cursor = con.cursor()
+        try:
+            cursor.execute(query)
+        except Exception as e:
+            cursor.close()
+            con.close()
+            raise e
+        con.commit()
+        try:
+            result = cursor.fetchall()
+        except psycopg2.ProgrammingError:
+            result = None
+        cursor.close()
+        con.close()
+        return [dict(r) for r in result] if result else result
+
+    def _send(
+            self,
+            data,
+            replace,
+            batch_size):
+        print(C.WARNING + "Initiate send_to_redshift..." + C.ENDC)
+        connection_kwargs = self.credentials()
+        con = psycopg2.connect(**connection_kwargs)
+        cursor = con.cursor()
+        if replace:
+            cleaning_request = '''DELETE FROM ''' + data["table_name"] + ''';'''
+            print(C.WARNING + "Cleaning" + C.ENDC)
+            self.execute_query(cleaning_request)
+            print(C.OKGREEN + "[OK] Cleaning Done" + C.ENDC)
+
+        boolean = True
+        index = 0
+        total_rows = len(data["rows"])
+        total_nb_batches = len(data["rows"]) // batch_size + 1
+        while boolean:
+            temp_row = []
+            for i in range(batch_size):
+                if not data["rows"]:
+                    boolean = False
+                    continue
+                temp_row.append(data["rows"].pop())
+
+            final_data = []
+            for x in temp_row:
+                for y in x:
+                    final_data.append(y)
+
+            temp_string = ','.join(map(lambda a: '(' + ','.join(map(lambda b: '%s', a)) + ')', tuple(temp_row)))
+
+            inserting_request = '''INSERT INTO ''' + data["table_name"] + ''' (''' + ", ".join(
+                data["columns_name"]) + ''') VALUES ''' + temp_string + ''';'''
+            if final_data:
+                try:
+                    cursor.execute(inserting_request, final_data)
+                except Exception as e:
+                    cursor.close()
+                    con.close()
+                    raise e
+            index = index + 1
+            percent = round(index * 100 / total_nb_batches, 2)
+            if percent < 100:
+                print("\r   %s / %s (%s %%)" % (str(index), total_nb_batches, str(percent)), end='\r')
+            else:
+                print("\r   %s / %s (%s %%)" % (str(index), total_nb_batches, str(percent)))
+        con.commit()
+
+        cursor.close()
+        con.close()
+        print(C.HEADER + str(total_rows) + ' rows sent to Redshift' + C.ENDC)
+        print(C.OKGREEN + "[OK] Sent to redshift" + C.ENDC)
+        return 0
+
+    def send_data(self,
+                  data,
+                  replace=True,
+                  batch_size=1000,
+                  other_table_to_update=None
+                  ):
+        """
+        data = {
+            "table_name" 	: 'name_of_the_redshift_schema' + '.' + 'name_of_the_redshift_table' #Must already exist,
+            "columns_name" 	: [first_column_name,second_column_name,...,last_column_name],
+            "rows"		: [[first_raw_value,second_raw_value,...,last_raw_value],...]
+        }
+        """
+        data_copy = copy.deepcopy(data)
+        try:
+            self._send(
+                data,
+                replace=replace,
+                batch_size=batch_size)
+        except Exception as e:
+            if "value too long for type character" in str(e).lower():
+                choose_columns_to_extend(
+                    self,
+                    data=data_copy,
+                    other_table_to_update=other_table_to_update
+                )
+            elif "does not exist" in str(e).lower() and "column" in str(e).lower():
+                create_columns(
+                    self,
+                    data=data_copy,
+                    other_table_to_update=other_table_to_update
+                )
+            elif "does not exist" in str(e).lower() and "relation" in str(e).lower():
+                print("Destination table doesn't exist! Will be created")
+                create_table(self, data)
+                replace = False
+
+            else:
+                print(e)
+                return 0
+            self.send_data(
+                data_copy,
+                replace=replace,
+                batch_size=batch_size)
