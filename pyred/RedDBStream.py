@@ -69,8 +69,8 @@ class RedDBStream(dbstream.DBStream):
 
             temp_string = ','.join(map(lambda a: '(' + ','.join(map(lambda b: '%s', a)) + ')', tuple(temp_row)))
 
-            inserting_request = '''INSERT INTO ''' + data["table_name"] + ''' (''' + ", ".join(
-                data["columns_name"]) + ''') VALUES ''' + temp_string + ''';'''
+            inserting_request = '''INSERT INTO ''' + data["table_name"] + ''' (\"''' + "\", \"".join(
+                data["columns_name"]) + '''\") VALUES ''' + temp_string + ''';'''
             if final_data:
                 try:
                     cursor.execute(inserting_request, final_data)
