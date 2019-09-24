@@ -1,9 +1,7 @@
 import copy
-
 import dbstream
 import psycopg2
 from psycopg2.extras import RealDictCursor
-
 from pyred.core.Column import choose_columns_to_extend
 from pyred.core.Table import create_table, create_columns
 from pyred.core.tools.print_colors import C
@@ -35,11 +33,7 @@ class RedDBStream(dbstream.DBStream):
         con.close()
         return [dict(r) for r in result] if result else result
 
-    def _send(
-            self,
-            data,
-            replace,
-            batch_size):
+    def _send(self, data, replace, batch_size=1000):
         print(C.WARNING + "Initiate send_to_redshift..." + C.ENDC)
         connection_kwargs = self.credentials()
         con = psycopg2.connect(**connection_kwargs)
@@ -107,10 +101,7 @@ class RedDBStream(dbstream.DBStream):
         """
         data_copy = copy.deepcopy(data)
         try:
-            self._send(
-                data,
-                replace=replace,
-                batch_size=batch_size)
+            self._send(data, replace=replace, batch_size=batch_size)
         except Exception as e:
             if "value too long for type character" in str(e).lower():
                 choose_columns_to_extend(
@@ -126,13 +117,11 @@ class RedDBStream(dbstream.DBStream):
                 )
             elif "does not exist" in str(e).lower() and "relation" in str(e).lower():
                 print("Destination table doesn't exist! Will be created")
-                create_table(self, data)
+                create_table(self, data_copy)
                 replace = False
 
             else:
                 print(e)
                 return 0
-            self.send_data(
-                data_copy,
-                replace=replace,
-                batch_size=batch_size)
+            self.send_data(data_copy, replace=replace, batch_size=batch_size,
+                           other_table_to_update=other_table_to_update)
