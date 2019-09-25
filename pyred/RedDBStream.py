@@ -5,6 +5,7 @@ from psycopg2.extras import RealDictCursor
 from pyred.core.Column import choose_columns_to_extend
 from pyred.core.Table import create_table, create_columns
 from pyred.core.tools.print_colors import C
+import time
 
 
 class RedDBStream(dbstream.DBStream):
@@ -15,7 +16,14 @@ class RedDBStream(dbstream.DBStream):
 
     def execute_query(self, query):
         connection_kwargs = self.credentials()
-        con = psycopg2.connect(**connection_kwargs, cursor_factory=RealDictCursor)
+        try:
+            con = psycopg2.connect(**connection_kwargs, cursor_factory=RealDictCursor)
+        except psycopg2.OperationalError:
+            time.sleep(2)
+            if self.ssh_tunnel:
+                self.ssh_tunnel.close()
+                self.create_tunnel()
+            con = psycopg2.connect(**connection_kwargs, cursor_factory=RealDictCursor)
 
         cursor = con.cursor()
         try:
@@ -36,7 +44,14 @@ class RedDBStream(dbstream.DBStream):
     def _send(self, data, replace, batch_size=1000):
         print(C.WARNING + "Initiate send_to_redshift..." + C.ENDC)
         connection_kwargs = self.credentials()
-        con = psycopg2.connect(**connection_kwargs)
+        try:
+            con = psycopg2.connect(**connection_kwargs, cursor_factory=RealDictCursor)
+        except psycopg2.OperationalError:
+            time.sleep(2)
+            if self.ssh_tunnel:
+                self.ssh_tunnel.close()
+                self.create_tunnel()
+            con = psycopg2.connect(**connection_kwargs, cursor_factory=RealDictCursor)
         cursor = con.cursor()
         if replace:
             cleaning_request = '''DELETE FROM ''' + data["table_name"] + ''';'''
