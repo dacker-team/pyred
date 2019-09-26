@@ -22,7 +22,6 @@ def get_table_info(_dbstream, table_and_schema_name):
 
 
 def format_create_table(_dbstream, data):
-    table_name = data["table_name"]
     columns_name = data["columns_name"]
     rows = data["rows"]
     params = {}
@@ -37,7 +36,7 @@ def format_create_table(_dbstream, data):
         params[name] = col
 
     query = """"""
-    query = query + "CREATE TABLE " + table_name + " ("
+    query = query + "CREATE TABLE %(table_name) ("
     col = list(params.keys())
     for i in range(len(col)):
         k = col[i]
@@ -53,15 +52,19 @@ def format_create_table(_dbstream, data):
     return query
 
 
-def create_table(_dbstream, data):
+def create_table(_dbstream, data, other_table_to_update):
     query = format_create_table(_dbstream, data)
     try:
-        _dbstream.execute_query(query)
+        _dbstream.execute_query(query % {"table_name": data["table_name"]})
+        if other_table_to_update:
+            _dbstream.execute_query(query % {"table_name": other_table_to_update})
     except psycopg2.ProgrammingError as e:
         e = str(e)
         if e[:7] == "schema ":
             _dbstream.execute_query("CREATE SCHEMA " + data['table_name'].split(".")[0])
-            _dbstream.execute_query(query)
+            _dbstream.execute_query(query % {"table_name": data["table_name"]})
+            if other_table_to_update:
+                _dbstream.execute_query(query % {"table_name": other_table_to_update})
         else:
             print(e)
 
