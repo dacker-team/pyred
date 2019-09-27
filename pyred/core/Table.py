@@ -36,7 +36,7 @@ def format_create_table(_dbstream, data):
         params[name] = col
 
     query = """"""
-    query = query + "CREATE TABLE %(table_name) ("
+    query = query + "CREATE TABLE %(table_name)s ("
     col = list(params.keys())
     for i in range(len(col)):
         k = col[i]
