@@ -40,13 +40,11 @@ def format_create_table(_dbstream, data):
     col = list(params.keys())
     for i in range(len(col)):
         k = col[i]
-        string_example = " --example:" + str(params[k]["example"])[:10] + ''
+        string_example = " --example:" + str(params[k]["example"])[:10].replace("\n", "") + ''
         if i == len(col) - 1:
             query = query + "\n     " + k + ' ' + params[k]["type"] + ' ' + 'NULL ' + string_example
         else:
             query = query + "\n     " + k + ' ' + params[k]["type"] + ' ' + 'NULL ,' + string_example
-    else:
-        query = query[:-1]
     query = query + "\n )"
     print(query)
     return query

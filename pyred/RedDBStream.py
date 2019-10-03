@@ -14,7 +14,7 @@ class RedDBStream(dbstream.DBStream):
         self.instance_type_prefix = "RED"
         self.ssh_init_port = 6543
 
-    def execute_query(self, query):
+    def connection(self):
         connection_kwargs = self.credentials()
         try:
             con = psycopg2.connect(**connection_kwargs, cursor_factory=RealDictCursor)
@@ -24,7 +24,10 @@ class RedDBStream(dbstream.DBStream):
                 self.ssh_tunnel.close()
                 self.create_tunnel()
             con = psycopg2.connect(**connection_kwargs, cursor_factory=RealDictCursor)
+        return con
 
+    def execute_query(self, query):
+        con = self.connection()
         cursor = con.cursor()
         try:
             cursor.execute(query)
@@ -43,15 +46,7 @@ class RedDBStream(dbstream.DBStream):
 
     def _send(self, data, replace, batch_size=1000):
         print(C.WARNING + "Initiate send_to_redshift..." + C.ENDC)
-        connection_kwargs = self.credentials()
-        try:
-            con = psycopg2.connect(**connection_kwargs, cursor_factory=RealDictCursor)
-        except psycopg2.OperationalError:
-            time.sleep(2)
-            if self.ssh_tunnel:
-                self.ssh_tunnel.close()
-                self.create_tunnel()
-            con = psycopg2.connect(**connection_kwargs, cursor_factory=RealDictCursor)
+        con = self.connection()
         cursor = con.cursor()
         if replace:
             cleaning_request = '''DELETE FROM ''' + data["table_name"] + ''';'''
