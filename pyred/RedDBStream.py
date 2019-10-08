@@ -125,7 +125,7 @@ class RedDBStream(dbstream.DBStream):
                     data=data_copy,
                     other_table_to_update=other_table_to_update
                 )
-            elif "does not exist" in str(e).lower() and "relation" in str(e).lower():
+            elif "does not exist" in str(e).lower() and ("relation" in str(e).lower() or "schema" in str(e).lower()):
                 print("Destination table doesn't exist! Will be created")
                 create_table(
                     self,
