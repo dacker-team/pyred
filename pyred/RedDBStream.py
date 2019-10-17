@@ -118,6 +118,7 @@ class RedDBStream(dbstream.DBStream):
             self._send(data, replace=replace, batch_size=batch_size)
             if os.environ.get("SERVER_MONITORING_URL"):
                 info = {
+                    "instance_type": self.instance_type_prefix,
                     "instance_name": self.instance_name,
                     "schema_name": data["table_name"].split('.')[0],
                     "table_name": data["table_name"].split('.')[1],
