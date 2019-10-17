@@ -1,6 +1,9 @@
 import copy
+import os
+
 import dbstream
 import psycopg2
+import requests
 from psycopg2.extras import RealDictCursor
 from pyred.core.Column import choose_columns_to_extend
 from pyred.core.Table import create_table, create_columns
@@ -112,6 +115,16 @@ class RedDBStream(dbstream.DBStream):
         data_copy = copy.deepcopy(data)
         try:
             self._send(data, replace=replace, batch_size=batch_size)
+            if os.environ.get("SEND_MONITORING_DATA"):
+                info = {
+                    "instance_name": self.instance_name,
+                    "schema_name": data["table_name"].split('.')[0],
+                    "table_name": data["table_name"].split('.')[1],
+                    "sent_rows": len(data["rows"]),
+                    "sent_time": self.datetime.now()
+                }
+
+                requests.post(os.environ.get("SERVER_URL"), params=info)
         except Exception as e:
             if "value too long for type character" in str(e).lower():
                 choose_columns_to_extend(
