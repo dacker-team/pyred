@@ -115,7 +115,7 @@ class RedDBStream(dbstream.DBStream):
         data_copy = copy.deepcopy(data)
         try:
             self._send(data, replace=replace, batch_size=batch_size)
-            if os.environ.get("SEND_MONITORING_DATA"):
+            if os.environ.get("SERVER_MONITORING_URL"):
                 info = {
                     "instance_name": self.instance_name,
                     "schema_name": data["table_name"].split('.')[0],
@@ -124,7 +124,7 @@ class RedDBStream(dbstream.DBStream):
                     "sent_time": self.datetime.now()
                 }
 
-                requests.post(os.environ.get("SERVER_URL"), params=info)
+                requests.post(os.environ.get("SERVER_MONITORING_URL"), params=info)
         except Exception as e:
             if "value too long for type character" in str(e).lower():
                 choose_columns_to_extend(
