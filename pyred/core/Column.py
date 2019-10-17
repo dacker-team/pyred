@@ -41,7 +41,7 @@ def choose_columns_to_extend(_dbstream, data, other_table_to_update):
     for c in columns_name:
         example = find_sample_value(df, c, columns_name.index(c))
         if isinstance(example, str):
-            if len(example) >= 255:
+            if len(example.encode()) >= 255:
                 if not columns_length.get(c) or columns_length.get(c) < len(example):
                     extend_column(_dbstream, table_name=data["table_name"], column_name=c)
                     if other_table_to_update:
@@ -77,7 +77,7 @@ def detect_type(_dbstream, name, example):
 
 def find_sample_value(df, name, i):
     if df[name].dtype == 'object':
-        df[name] = df[name].apply(lambda x: str(x) if x is not None else '')
+        df[name] = df[name].apply(lambda x: str(x.encode()) if x is not None else '')
         return df[name][df[name].map(len) == df[name].map(len).max()].iloc[0]
     else:
         rows = df.values.tolist()
