@@ -1,4 +1,5 @@
 import copy
+import datetime
 import os
 
 import dbstream
@@ -121,7 +122,7 @@ class RedDBStream(dbstream.DBStream):
                     "schema_name": data["table_name"].split('.')[0],
                     "table_name": data["table_name"].split('.')[1],
                     "sent_rows": len(data["rows"]),
-                    "sent_time": self.datetime.now()
+                    "sent_time": datetime.datetime.now()
                 }
 
                 requests.post(os.environ.get("SERVER_MONITORING_URL"), params=info)
