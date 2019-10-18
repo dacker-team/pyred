@@ -13,8 +13,8 @@ import time
 
 
 class RedDBStream(dbstream.DBStream):
-    def __init__(self, instance_name):
-        super().__init__(instance_name)
+    def __init__(self, instance_name, client_id):
+        super().__init__(instance_name, client_id=client_id)
         self.instance_type_prefix = "RED"
         self.ssh_init_port = 6543
 
