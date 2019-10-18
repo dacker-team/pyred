@@ -100,12 +100,12 @@ class RedDBStream(dbstream.DBStream):
         print(C.OKGREEN + "[OK] Sent to redshift" + C.ENDC)
         return 0
 
-    def send_data(self,
-                  data,
-                  replace=True,
-                  batch_size=1000,
-                  other_table_to_update=None
-                  ):
+    def _send_data_custom(self,
+                          data,
+                          replace=True,
+                          batch_size=1000,
+                          other_table_to_update=None
+                          ):
         """
         data = {
             "table_name" 	: 'name_of_the_redshift_schema' + '.' + 'name_of_the_redshift_table' #Must already exist,
@@ -116,17 +116,6 @@ class RedDBStream(dbstream.DBStream):
         data_copy = copy.deepcopy(data)
         try:
             self._send(data, replace=replace, batch_size=batch_size)
-            if os.environ.get("SERVER_MONITORING_URL"):
-                info = {
-                    "instance_type": self.instance_type_prefix,
-                    "instance_name": self.instance_name,
-                    "schema_name": data["table_name"].split('.')[0],
-                    "table_name": data["table_name"].split('.')[1],
-                    "sent_rows": len(data["rows"]),
-                    "sent_time": datetime.datetime.now()
-                }
-
-                requests.post(os.environ.get("SERVER_MONITORING_URL"), params=info)
         except Exception as e:
             if "value too long for type character" in str(e).lower():
                 choose_columns_to_extend(
@@ -152,5 +141,5 @@ class RedDBStream(dbstream.DBStream):
             else:
                 print(e)
                 return 0
-            self.send_data(data_copy, replace=replace, batch_size=batch_size,
-                           other_table_to_update=other_table_to_update)
+            self._send_data_custom(data_copy, replace=replace, batch_size=batch_size,
+                                   other_table_to_update=other_table_to_update)

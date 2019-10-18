@@ -8,3 +8,4 @@ pyred.egg-info/
 *sandbox*
 ssh_path_private_key
 venv1/
+deploy.sh
