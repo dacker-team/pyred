@@ -1,3 +1,5 @@
+import copy
+
 import pandas as pd
 import psycopg2
 
@@ -82,10 +84,10 @@ def len_or_max(s):
 
 
 def find_sample_value(df, name, i):
-    print(df[name].dtype)
+    df_copy = copy.deepcopy(df)
     if df[name].dtype == 'object':
         df[name] = df[name].apply(lambda x: (str(x.encode()) if isinstance(x, str) else x) if x is not None else '')
-        return df[name][df[name].map(len_or_max) == df[name].map(len_or_max).max()].iloc[0]
+        return df_copy[name][df[name].map(len_or_max) == df[name].map(len_or_max).max()].iloc[0]
     else:
         rows = df.values.tolist()
         for row in rows:

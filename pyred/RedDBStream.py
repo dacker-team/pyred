@@ -1,9 +1,11 @@
 import copy
 import datetime
+import json
 import os
 
 import dbstream
 import psycopg2
+import re
 import requests
 from psycopg2.extras import RealDictCursor
 from pyred.core.Column import choose_columns_to_extend
@@ -30,7 +32,7 @@ class RedDBStream(dbstream.DBStream):
             con = psycopg2.connect(**connection_kwargs, cursor_factory=RealDictCursor)
         return con
 
-    def execute_query(self, query):
+    def _execute_query_custom(self, query):
         con = self.connection()
         cursor = con.cursor()
         try:
@@ -46,7 +48,13 @@ class RedDBStream(dbstream.DBStream):
             result = None
         cursor.close()
         con.close()
-        return [dict(r) for r in result] if result else result
+        query_create_table = re.search("(?i)(?<=((create table ))).*(?= as)", query)
+        if result:
+            return [dict(r) for r in result]
+        elif query_create_table:
+            return {'execute_query': query_create_table}
+        else:
+            return None
 
     def _send(self, data, replace, batch_size=1000):
         print(C.WARNING + "Initiate send_to_redshift..." + C.ENDC)
