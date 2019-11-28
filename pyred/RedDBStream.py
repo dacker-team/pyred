@@ -147,7 +147,7 @@ class RedDBStream(dbstream.DBStream):
                 replace = False
 
             else:
-                print(e)
-                return 0
+                raise e
+
             self._send_data_custom(data_copy, replace=replace, batch_size=batch_size,
                                    other_table_to_update=other_table_to_update)

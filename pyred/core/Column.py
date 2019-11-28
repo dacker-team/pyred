@@ -44,7 +44,7 @@ def choose_columns_to_extend(_dbstream, data, other_table_to_update):
         example = find_sample_value(df, c, columns_name.index(c))
         if isinstance(example, str):
             if len(example.encode()) >= 255:
-                if not columns_length.get(c) or columns_length.get(c) < len(example):
+                if not columns_length.get(c) or columns_length.get(c) < len(example.encode()):
                     extend_column(_dbstream, table_name=data["table_name"], column_name=c)
                     if other_table_to_update:
                         extend_column(_dbstream, table_name=other_table_to_update, column_name=c)
