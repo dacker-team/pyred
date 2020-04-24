@@ -5,5 +5,7 @@ dist/
 pyred.egg-info/
 *pyc
 .DS_Store
-sandbox.py
+*sandbox*
 ssh_path_private_key
+venv1/
+deploy.sh
