@@ -1,4 +1,5 @@
 import copy
+import datetime
 import json
 
 import pandas as pd
@@ -60,8 +61,9 @@ def detect_type(_dbstream, name, example):
 
     except psycopg2.Error:
         pass
-
-    if isinstance(example, str):
+    if isinstance(example, datetime.date):
+        return "TIMESTAMP"
+    elif isinstance(example, str):
         if len(example) >= 255:
             return "VARCHAR(65000)"
         return "VARCHAR(255)"
