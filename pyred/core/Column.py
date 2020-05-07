@@ -89,7 +89,6 @@ def len_or_max(s):
 def find_sample_value(df, name, i):
     df_copy = copy.deepcopy(df)
     if df[name].dtype == 'object':
-        df[name] = df[name].apply(lambda x : json.dumps(x) if (isinstance(x, list) or isinstance(x, dict)) else x)
         df[name] = df[name].apply(lambda x: (str(x.encode()) if isinstance(x, str) else x) if x is not None else '')
         return df_copy[name][df[name].map(len_or_max) == df[name].map(len_or_max).max()].iloc[0]
     else:
