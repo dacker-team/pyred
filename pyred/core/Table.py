@@ -23,7 +23,20 @@ def get_table_info(_dbstream, table_and_schema_name):
 
 def format_create_table(_dbstream, data):
     columns_name = data["columns_name"]
-    rows = data["rows"]
+    rows = []
+    for data_row in data["rows"]:
+        row = []
+        for data_item in data_row:
+            if isinstance(data_item, list):
+                if len(data_item) == 0:
+                    row.append(None)
+                elif len(data_item) == 1:
+                    row.append(data_item[0])
+                else:
+                    row.append(str(data_item))
+            else:
+                row.append(data_item)
+        rows.append(row)
     params = {}
     df = pd.DataFrame(rows, columns=columns_name)
     df = df.where((pd.notnull(df)), None)
