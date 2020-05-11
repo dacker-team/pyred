@@ -33,7 +33,7 @@ def format_create_table(_dbstream, data):
                 elif len(data_item) == 1:
                     row.append(data_item[0])
                 else:
-                    row.append(str(data_item))
+                    row.append(', '.join(data_item))
             else:
                 row.append(data_item)
         rows.append(row)
