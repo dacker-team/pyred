@@ -152,7 +152,7 @@ class RedDBStream(dbstream.DBStream):
             self._send_data_custom(data_copy, replace=replace, batch_size=batch_size,
                                    other_table_to_update=other_table_to_update)
 
-    def _send_temp_data(self, data, schema_prefix, table, column_names):
+    def send_temp_data(self, data, schema_prefix, table, column_names):
         data_to_send = {
             "columns_name": column_names,
             "rows": [[r[c] for c in column_names] for r in data],
@@ -162,7 +162,7 @@ class RedDBStream(dbstream.DBStream):
             other_table_to_update=schema_prefix + '.' + table,
             replace=False)
 
-    def _clean(self, selecting_id, schema_prefix, table):
+    def clean(self, selecting_id, schema_prefix, table):
         print('trying to clean')
         cleaning_query = """
                 DELETE FROM %(schema_name)s.%(table_name)s WHERE %(id)s IN (SELECT distinct %(id)s FROM %(schema_name)s.%(table_name)s_temp);
