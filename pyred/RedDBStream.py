@@ -152,18 +152,8 @@ class RedDBStream(dbstream.DBStream):
             self._send_data_custom(data_copy, replace=replace, batch_size=batch_size,
                                    other_table_to_update=other_table_to_update)
 
-    def send_temp_data(self, data, schema_prefix, table, column_names):
-        data_to_send = {
-            "columns_name": column_names,
-            "rows": [[r[c] for c in column_names] for r in data],
-            "table_name": schema_prefix + '.' + table + '_temp'}
-        self.send_data(
-            data=data_to_send,
-            other_table_to_update=schema_prefix + '.' + table,
-            replace=False)
-
     def clean(self, selecting_id, schema_prefix, table):
-        print('trying to clean')
+        print('trying to clean table %s.%s using %s'%(schema_prefix, table, selecting_id))
         cleaning_query = """
                 DELETE FROM %(schema_name)s.%(table_name)s WHERE %(id)s IN (SELECT distinct %(id)s FROM %(schema_name)s.%(table_name)s_temp);
                 INSERT INTO %(schema_name)s.%(table_name)s 
@@ -174,5 +164,21 @@ class RedDBStream(dbstream.DBStream):
                        "id": selecting_id}
         self.execute_query(cleaning_query)
         print('cleaned')
+
+
+    def send_temp_data(self, data, schema_prefix, table, column_names):
+        data_to_send = {
+            "columns_name": column_names,
+            "rows": [[r[c] for c in column_names] for r in data],
+            "table_name": schema_prefix + '.' + table + '_temp'}
+        self.send_data(
+            data=data_to_send,
+            other_table_to_update=schema_prefix + '.' + table,
+            replace=False)
+
+
+    def send_with_temp_table(self, data, column_names, selecting_id, schema_prefix, table):
+        self.send_temp_data(data, schema_prefix, table, column_names)
+        self.clean(selecting_id, schema_prefix, table)
 
 
