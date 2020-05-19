@@ -23,6 +23,9 @@ def get_table_info(_dbstream, table_and_schema_name):
 
 def format_create_table(_dbstream, data):
     columns_name = data["columns_name"]
+    for name in columns_name:
+        if name[0].isdigit():
+            raise ValueError('Invalid column name : column names cannot start by digits')
     rows = data["rows"]
     params = {}
     df = pd.DataFrame(rows, columns=columns_name)
