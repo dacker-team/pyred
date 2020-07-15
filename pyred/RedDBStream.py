@@ -171,7 +171,7 @@ class RedDBStream(dbstream.DBStream):
             return r[0]["max"]
         except IndexError:
             return None
-        except psycopg2.ProgrammingError as e:
-            if "table" in str(e):
+        except (psycopg2.ProgrammingError, psycopg2.errors.InvalidSchemaName) as e:
+            if "table" in str(e) or "schema" in str(e):
                 return None
             raise e
