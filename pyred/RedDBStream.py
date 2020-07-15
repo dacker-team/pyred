@@ -153,7 +153,7 @@ class RedDBStream(dbstream.DBStream):
                                    other_table_to_update=other_table_to_update)
 
     def clean(self, selecting_id, schema_prefix, table):
-        print('trying to clean table %s.%s using %s'%(schema_prefix, table, selecting_id))
+        print('trying to clean table %s.%s using %s' % (schema_prefix, table, selecting_id))
         cleaning_query = """
                 DELETE FROM %(schema_name)s.%(table_name)s WHERE %(id)s IN (SELECT distinct %(id)s FROM %(schema_name)s.%(table_name)s_temp);
                 INSERT INTO %(schema_name)s.%(table_name)s 
@@ -165,6 +165,13 @@ class RedDBStream(dbstream.DBStream):
         self.execute_query(cleaning_query)
         print('cleaned')
 
-
-
-
+    def get_max(self, schema, table, field):
+        try:
+            r = self.execute_query("SELECT max(%s) as max FROM %s.%s" % (field, schema, table))
+            return r[0]["max"]
+        except IndexError:
+            return None
+        except psycopg2.ProgrammingError as e:
+            if "table" in str(e):
+                return None
+            raise e
