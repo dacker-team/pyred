@@ -165,13 +165,13 @@ class RedDBStream(dbstream.DBStream):
         self.execute_query(cleaning_query)
         print('cleaned')
 
-    def get_max(self, schema, table, field):
+    def get_max(self, schema, table, field, filter_clause=""):
         try:
-            r = self.execute_query("SELECT max(%s) as max FROM %s.%s" % (field, schema, table))
+            r = self.execute_query("SELECT max(%s) as max FROM %s.%s %s" % (field, schema, table, filter_clause))
             return r[0]["max"]
         except IndexError:
             return None
         except (psycopg2.ProgrammingError, psycopg2.errors.InvalidSchemaName) as e:
-            if "table" in str(e) or "schema" in str(e):
+            if "relation" in str(e) or "schema" in str(e):
                 return None
             raise e
