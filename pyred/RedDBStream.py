@@ -175,3 +175,25 @@ class RedDBStream(dbstream.DBStream):
             if "relation" in str(e) or "schema" in str(e):
                 return None
             raise e
+
+    def get_data_type(self, table_name, schema_name):
+        query = """ SELECT
+                column_name, data_type
+                FROM
+                information_schema.columns
+                WHERE
+                table_name = '%s' and table_schema = '%s'
+                """ % (table_name, schema_name)
+
+        return self.execute_query(query=query)
+
+    def create_view_from_columns(self, view_name, columns, schema_name, table_name):
+        view_query = '''DROP VIEW IF EXISTS %s ;CREATE VIEW %s as (SELECT %s FROM %s.%s)''' \
+                     % (view_name, view_name, columns, schema_name, table_name)
+        self.execute_query(view_query)
+
+    def create_schema(self, schema_name):
+        self.execute_query("CREATE SCHEMA %s" % schema_name)
+
+    def drop_schema(self, schema_name):
+        self.execute_query("DROP SCHEMA %s CASCADE" % schema_name)
