@@ -18,6 +18,33 @@ def extend_column(_dbstream, table_name, column_name):
     _dbstream.execute_query(query)
     return query
 
+def type_to_str(_dbstream, table_name, column_name):
+    query = """
+    ALTER TABLE %(table_name)s ADD COLUMN %(new_column_name)s VARCHAR(255);
+    UPDATE %(table_name)s SET  %(new_column_name)s = %(column_name)s;
+    ALTER TABLE %(table_name)s DROP COLUMN %(column_name)s CASCADE ;
+    ALTER TABLE %(table_name)s RENAME COLUMN %(new_column_name)s TO %(column_name)s;
+    """ % {
+        "table_name": table_name,
+        "column_name": column_name,
+        "new_column_name": column_name + "_new"
+    }
+    _dbstream.execute_query(query)
+    return query
+
+def type_to_float(_dbstream, table_name, column_name):
+    query = """
+    ALTER TABLE %(table_name)s ADD COLUMN %(new_column_name)s float8;
+    UPDATE %(table_name)s SET  %(new_column_name)s = %(column_name)s;
+    ALTER TABLE %(table_name)s DROP COLUMN %(column_name)s CASCADE ;
+    ALTER TABLE %(table_name)s RENAME COLUMN %(new_column_name)s TO %(column_name)s;
+    """ % {
+        "table_name": table_name,
+        "column_name": column_name,
+        "new_column_name": column_name + "_new"
+    }
+    _dbstream.execute_query(query)
+    return query
 
 def get_columns_length(_dbstream, schema_name, table_name):
     query = """
@@ -49,6 +76,31 @@ def choose_columns_to_extend(_dbstream, data, other_table_to_update):
                     if other_table_to_update:
                         extend_column(_dbstream, table_name=other_table_to_update, column_name=c)
 
+def columns_type_to_str(_dbstream, data, other_table_to_update):
+    table_name = data["table_name"].split('.')
+    rows = data["rows"]
+    columns_name = data["columns_name"]
+    df = pd.DataFrame(rows, columns=columns_name)
+
+    for c in columns_name:
+        example = find_sample_value(df, c, columns_name.index(c))
+        if isinstance(example, str):
+            type_to_str(_dbstream, table_name=data["table_name"], column_name=c)
+            if other_table_to_update:
+                type_to_str(_dbstream, table_name=other_table_to_update, column_name=c)
+
+def columns_type_to_float(_dbstream, data, other_table_to_update):
+    table_name = data["table_name"].split('.')
+    rows = data["rows"]
+    columns_name = data["columns_name"]
+    df = pd.DataFrame(rows, columns=columns_name)
+
+    for c in columns_name:
+        example = find_sample_value(df, c, columns_name.index(c))
+        if isinstance(example, float):
+            type_to_float(_dbstream, table_name=data["table_name"], column_name=c)
+            if other_table_to_update:
+                type_to_float(_dbstream, table_name=other_table_to_update, column_name=c)
 
 def detect_type(_dbstream, name, example):
     print('Define type of %s...' % name)
@@ -84,6 +136,14 @@ def len_or_max(s):
 
 
 def find_sample_value(df, name, i):
+    try:
+        df[name] = df[name].apply(lambda x: int(x))
+    except:
+        pass
+    try:
+        df[name] = df[name].apply(lambda x: float(x) if not isinstance(x,int) else x)
+    except:
+        pass
     df_copy = copy.deepcopy(df)
     if df[name].dtype == 'object':
         df[name] = df[name].apply(lambda x: (str(x.encode()) if isinstance(x, str) else x) if x is not None else '')

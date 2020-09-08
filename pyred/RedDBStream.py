@@ -8,7 +8,7 @@ import psycopg2
 import re
 import requests
 from psycopg2.extras import RealDictCursor
-from pyred.core.Column import choose_columns_to_extend
+from pyred.core.Column import choose_columns_to_extend, columns_type_to_float, columns_type_to_str
 from pyred.core.Table import create_table, create_columns
 from pyred.core.tools.print_colors import C
 import time
@@ -125,7 +125,19 @@ class RedDBStream(dbstream.DBStream):
         try:
             self._send(data, replace=replace, batch_size=batch_size)
         except Exception as e:
-            if "value too long for type character" in str(e).lower():
+            if "invalid input syntax for integer" in str(e).lower():
+                columns_type_to_float(
+                    self,
+                    data=data_copy,
+                    other_table_to_update=other_table_to_update
+                )
+            elif "invalid input syntax for type double precision" in str(e).lower():
+                columns_type_to_str(
+                    self,
+                    data=data_copy,
+                    other_table_to_update=other_table_to_update
+                )
+            elif "value too long for type character" in str(e).lower():
                 choose_columns_to_extend(
                     self,
                     data=data_copy,
