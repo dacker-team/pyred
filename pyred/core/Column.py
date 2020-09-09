@@ -3,31 +3,17 @@ import datetime
 import pandas as pd
 import psycopg2
 
-
-def extend_column(_dbstream, table_name, column_name):
+def change_type(_dbstream, table_name, column_name, type):
     query = """
-    ALTER TABLE %(table_name)s ADD COLUMN %(new_column_name)s VARCHAR(65000);
+    ALTER TABLE %(table_name)s ADD COLUMN %(new_column_name)s %(type)s;
     UPDATE %(table_name)s SET  %(new_column_name)s = %(column_name)s;
     ALTER TABLE %(table_name)s DROP COLUMN %(column_name)s CASCADE ;
     ALTER TABLE %(table_name)s RENAME COLUMN %(new_column_name)s TO %(column_name)s;
     """ % {
         "table_name": table_name,
         "column_name": column_name,
-        "new_column_name": column_name + "_new"
-    }
-    _dbstream.execute_query(query)
-    return query
-
-def type_to_str(_dbstream, table_name, column_name):
-    query = """
-    ALTER TABLE %(table_name)s ADD COLUMN %(new_column_name)s VARCHAR(255);
-    UPDATE %(table_name)s SET  %(new_column_name)s = %(column_name)s;
-    ALTER TABLE %(table_name)s DROP COLUMN %(column_name)s CASCADE ;
-    ALTER TABLE %(table_name)s RENAME COLUMN %(new_column_name)s TO %(column_name)s;
-    """ % {
-        "table_name": table_name,
-        "column_name": column_name,
-        "new_column_name": column_name + "_new"
+        "new_column_name": column_name + "_new",
+        "type": type
     }
     _dbstream.execute_query(query)
     return query
@@ -36,34 +22,6 @@ def bool_to_str(_dbstream, table_name, column_name):
     query = """
     ALTER TABLE %(table_name)s ADD COLUMN %(new_column_name)s VARCHAR(255);
     UPDATE %(table_name)s SET  %(new_column_name)s = case when %(column_name)s=True then 'True' when %(column_name)s=False then 'False' end;
-    ALTER TABLE %(table_name)s DROP COLUMN %(column_name)s CASCADE ;
-    ALTER TABLE %(table_name)s RENAME COLUMN %(new_column_name)s TO %(column_name)s;
-    """ % {
-        "table_name": table_name,
-        "column_name": column_name,
-        "new_column_name": column_name + "_new"
-    }
-    _dbstream.execute_query(query)
-    return query
-
-def type_to_float(_dbstream, table_name, column_name):
-    query = """
-    ALTER TABLE %(table_name)s ADD COLUMN %(new_column_name)s float8;
-    UPDATE %(table_name)s SET  %(new_column_name)s = %(column_name)s;
-    ALTER TABLE %(table_name)s DROP COLUMN %(column_name)s CASCADE ;
-    ALTER TABLE %(table_name)s RENAME COLUMN %(new_column_name)s TO %(column_name)s;
-    """ % {
-        "table_name": table_name,
-        "column_name": column_name,
-        "new_column_name": column_name + "_new"
-    }
-    _dbstream.execute_query(query)
-    return query
-
-def type_to_bigint(_dbstream, table_name, column_name):
-    query = """
-    ALTER TABLE %(table_name)s ADD COLUMN %(new_column_name)s int8;
-    UPDATE %(table_name)s SET  %(new_column_name)s = %(column_name)s;
     ALTER TABLE %(table_name)s DROP COLUMN %(column_name)s CASCADE ;
     ALTER TABLE %(table_name)s RENAME COLUMN %(new_column_name)s TO %(column_name)s;
     """ % {
@@ -112,9 +70,9 @@ def choose_columns_to_extend(_dbstream, data, other_table_to_update):
         if isinstance(example, str):
             if len(str(example.encode())) >= 255:
                 if not columns_length.get(c) or columns_length.get(c) < len(str(example.encode())):
-                    extend_column(_dbstream, table_name=data["table_name"], column_name=c)
+                    change_type(_dbstream, table_name=data["table_name"], column_name=c, type="VARCHAR(65000")
                     if other_table_to_update:
-                        extend_column(_dbstream, table_name=other_table_to_update, column_name=c)
+                        change_type(_dbstream, table_name=data["table_name"], column_name=c, type="VARCHAR(65000")
 
 def change_columns_type(_dbstream, data, other_table_to_update):
     table_name = data["table_name"].split('.')
@@ -127,19 +85,19 @@ def change_columns_type(_dbstream, data, other_table_to_update):
         example = find_sample_value(df, c, columns_name.index(c))
         if isinstance(example, float):
             if columns_type.get(c) != "float8":
-                type_to_float(_dbstream, table_name=data["table_name"], column_name=c)
+                change_type(_dbstream, table_name=data["table_name"], column_name=c, type="float8")
                 if other_table_to_update:
-                    type_to_float(_dbstream, table_name=other_table_to_update, column_name=c)
+                    change_type(_dbstream, table_name=data["table_name"], column_name=c, type="float8")
         if isinstance(example, str):
             if columns_type.get(c) != "varchar" and columns_type.get(c) != "bool":
-                type_to_str(_dbstream, table_name=data["table_name"], column_name=c)
+                change_type(_dbstream, table_name=data["table_name"], column_name=c, type="VARCHAR(255)")
                 if other_table_to_update:
-                    type_to_str(_dbstream, table_name=other_table_to_update, column_name=c)
+                    change_type(_dbstream, table_name=data["table_name"], column_name=c, type="VARCHAR(255)")
         if isinstance(example, int) and (example > 2147483646):
             if columns_type.get(c) != "int8":
-                type_to_bigint(_dbstream, table_name=data["table_name"], column_name=c)
+                change_type(_dbstream, table_name=data["table_name"], column_name=c, type="int8")
                 if other_table_to_update:
-                    type_to_bigint(_dbstream, table_name=other_table_to_update, column_name=c)
+                    change_type(_dbstream, table_name=data["table_name"], column_name=c, type="float8")
 
 def columns_type_bool_to_str(_dbstream, data, other_table_to_update):
     table_name = data["table_name"].split('.')
@@ -184,11 +142,12 @@ def detect_type(_dbstream, name, example):
         return "VARCHAR(255)"
 
 def convert_to_bool(x):
-    if x == "True" or x == "TRUE":
+    if x.lower() == "true" or x == 1 or x.lower() == "t":
         return True
-    if x == "False" or x == "FALSE":
+    if x.lower() == "false" or x == 0 or x.lower() == "f":
         return False
-    return x
+    else:
+        raise Exception
 
 def len_or_max(s):
     if isinstance(s, str):
@@ -197,30 +156,34 @@ def len_or_max(s):
 
 def find_sample_value(df, name, i):
     try:
+        df[name] = df[name].apply(lambda x: str(x))
+    except:
+        pass
+    try:
         df[name] = df[name].apply(lambda x: convert_to_bool(x))
     except:
-        pass
-    try:
-        df[name] = df[name].apply(lambda x: int(x) if not isinstance(x, bool) else x)
-    except:
-        pass
-    try:
-        df[name] = df[name].apply(lambda x: float(x) if (not isinstance(x, int) and not isinstance(x, bool)) else x)
-    except:
-        pass
+        try:
+            df[name] = df[name].apply(lambda x: int(x))
+        except:
+            try:
+                df[name] = df[name].apply(lambda x: float(x))
+            except:
+                pass
     df_copy = copy.deepcopy(df)
     if df[name].dtype == 'object':
         df[name] = df[name].apply(lambda x: (str(x.encode()) if isinstance(x, str) else x) if x is not None else '')
-        return df_copy[name][df[name].map(len_or_max) == df[name].map(len_or_max).max()].iloc[0]
+        return df_copy[name][df[name].map(len_or_max) == df[name].map(len_or_max).max()].iloc[0], df_copy[name][df[name].map(len_or_max) == df[name].map(len_or_max).min()].iloc[0]
     elif df[name].dtype == 'int64':
         max = int(df[name].max())
-        return max
+        min = int(df[name].min())
+        return max, min
     elif df[name].dtype == 'float64':
         max = float(df[name].max())
-        return max
+        min = float(df[name].min())
+        return max, min
     else:
         rows = df.values.tolist()
         for row in rows:
             if row[i] is not None:
-                return row[i]
-        return None
+                return row[i], row[i]
+        return None, None

@@ -29,10 +29,18 @@ def format_create_table(_dbstream, data):
     df = df.where((pd.notnull(df)), None)
     for i in range(len(columns_name)):
         name = columns_name[i]
-        example = find_sample_value(df, name, i)
+        example_max, example_min = find_sample_value(df, name, i)
         col = dict()
-        col["example"] = example
-        col["type"] = detect_type(_dbstream, name=name, example=example)
+        col["example"] = example_max
+        type_max = detect_type(_dbstream, name=name, example=example_max)
+        if type_max == "TIMESTAMP":
+            type_min = detect_type(_dbstream, name=name, example=example_min)
+            if type_min == type_max:
+                col["type"] = type_max
+            else:
+                col["type"] = "VARCHAR(255)"
+        else:
+            col["type"] = type_max
         params[name] = col
 
     query = """"""
@@ -78,8 +86,16 @@ def create_columns(_dbstream, data, other_table_to_update):
     queries = []
     for column_name in columns_name:
         if column_name not in all_column_in_table:
-            example = find_sample_value(df, column_name, columns_name.index(column_name))
-            type_ = detect_type(_dbstream, name=column_name, example=example)
+            example_max, example_min = find_sample_value(df, column_name, columns_name.index(column_name))
+            type_max = detect_type(_dbstream, name=column_name, example=example_max)
+            if type_max =="TIMESTAMP":
+                type_min = detect_type(_dbstream, name=column_name, example=example_min)
+                if type_min == type_max:
+                    type_ = type_max
+                else:
+                    type_ = "VARCHAR(255)"
+            else:
+                type_ = type_max
             query = """
             alter table %s
             add "%s" %s
