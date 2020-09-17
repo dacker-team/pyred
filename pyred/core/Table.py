@@ -38,7 +38,7 @@ def format_create_table(_dbstream, data):
             if type_min == type_max:
                 col["type"] = type_max
             else:
-                col["type"] = "VARCHAR(255)"
+                col["type"] = type_min
         else:
             col["type"] = type_max
         params[name] = col

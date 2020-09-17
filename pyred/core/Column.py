@@ -149,37 +149,47 @@ def convert_to_bool(x):
     else:
         raise Exception
 
+def convert_to_int(x):
+    if x[-2:] == ".0":
+        return int(x.replace(".0",""))
+    else:
+        return int(x)
+
 def len_or_max(s):
     if isinstance(s, str):
         return len(s)
     return s
 
 def find_sample_value(df, name, i):
+    df1 = df[name].dropna()
     try:
-        df[name] = df[name].apply(lambda x: str(x))
+        df1 = df1.apply(lambda x: str(x))
     except:
         pass
     try:
-        df[name] = df[name].apply(lambda x: convert_to_bool(x))
+        df1 = df1.apply(lambda x: convert_to_bool(x))
     except:
         try:
-            df[name] = df[name].apply(lambda x: int(x))
+            df1 = df1.apply(lambda x: convert_to_int(x))
         except:
             try:
-                df[name] = df[name].apply(lambda x: float(x))
+                df1 = df1.apply(lambda x: float(x))
             except:
                 pass
-    df_copy = copy.deepcopy(df)
-    if df[name].dtype == 'object':
-        df[name] = df[name].apply(lambda x: (str(x.encode()) if isinstance(x, str) else x) if x is not None else '')
-        return df_copy[name][df[name].map(len_or_max) == df[name].map(len_or_max).max()].iloc[0], df_copy[name][df[name].map(len_or_max) == df[name].map(len_or_max).min()].iloc[0]
-    elif df[name].dtype == 'int64':
-        max = int(df[name].max())
-        min = int(df[name].min())
+    df1_copy = copy.deepcopy(df1)
+    if df1.dtype == 'object':
+        df1 = df1.apply(lambda x: (str(x.encode()) if isinstance(x, str) else x) if x is not None else '')
+        if df1.empty:
+            return None, None
+        else:
+            return df1_copy[df1.map(len_or_max) == df1.map(len_or_max).max()].iloc[0], df1_copy[df1.map(len_or_max) == df1.map(len_or_max).min()].iloc[0]
+    elif df1.dtype == 'int64':
+        max = int(df1.max())
+        min = int(df1.min())
         return max, min
-    elif df[name].dtype == 'float64':
-        max = float(df[name].max())
-        min = float(df[name].min())
+    elif df1.dtype == 'float64':
+        max = float(df1.max())
+        min = float(df1.min())
         return max, min
     else:
         rows = df.values.tolist()
