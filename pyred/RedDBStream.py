@@ -8,8 +8,9 @@ import psycopg2
 import re
 import requests
 from psycopg2.extras import RealDictCursor
-from pyred.core.Column import choose_columns_to_extend
+from pyred.core.Column import change_columns_type, choose_columns_to_extend, columns_type_bool_to_str
 from pyred.core.Table import create_table, create_columns
+from pyred.core.tools.compare import schema_compare_tool
 from pyred.core.tools.print_colors import C
 import time
 
@@ -54,7 +55,8 @@ class RedDBStream(dbstream.DBStream):
         elif query_create_table:
             return {'execute_query': query_create_table}
         else:
-            return None
+            empty_list = []
+            return empty_list
 
     def _send(self, data, replace, batch_size=1000):
         print(C.WARNING + "Initiate send_to_redshift..." + C.ENDC)
@@ -125,7 +127,21 @@ class RedDBStream(dbstream.DBStream):
         try:
             self._send(data, replace=replace, batch_size=batch_size)
         except Exception as e:
-            if "value too long for type character" in str(e).lower():
+            if "invalid input syntax for integer" in str(e).lower() \
+                    or "invalid input syntax for type double precision" in str(e).lower() \
+                    or "is out of range for type integer" in str(e).lower():
+                change_columns_type(
+                    self,
+                    data=data_copy,
+                    other_table_to_update=other_table_to_update
+                )
+            elif "invalid input syntax for type boolean:" in str(e).lower():
+                columns_type_bool_to_str(
+                    self,
+                    data=data_copy,
+                    other_table_to_update=other_table_to_update
+                )
+            elif "value too long for type character" in str(e).lower():
                 choose_columns_to_extend(
                     self,
                     data=data_copy,
@@ -197,3 +213,6 @@ class RedDBStream(dbstream.DBStream):
 
     def drop_schema(self, schema_name):
         self.execute_query("DROP SCHEMA %s CASCADE" % schema_name)
+
+    def schema_compare(self, schema_ref, new_schema_test):
+        schema_compare_tool(self, schema_ref, new_schema_test)
