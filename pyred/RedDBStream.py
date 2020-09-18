@@ -10,6 +10,7 @@ import requests
 from psycopg2.extras import RealDictCursor
 from pyred.core.Column import change_columns_type, choose_columns_to_extend, columns_type_bool_to_str
 from pyred.core.Table import create_table, create_columns
+from pyred.core.tools.compare import schema_compare_tool
 from pyred.core.tools.print_colors import C
 import time
 
@@ -212,3 +213,6 @@ class RedDBStream(dbstream.DBStream):
 
     def drop_schema(self, schema_name):
         self.execute_query("DROP SCHEMA %s CASCADE" % schema_name)
+
+    def schema_compare(self, schema_ref, new_schema_test):
+        schema_compare_tool(self, schema_ref, new_schema_test)
