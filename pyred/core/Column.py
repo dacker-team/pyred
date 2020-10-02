@@ -66,13 +66,13 @@ def choose_columns_to_extend(_dbstream, data, other_table_to_update):
     df = pd.DataFrame(rows, columns=columns_name)
 
     for c in columns_name:
-        example = find_sample_value(df, c, columns_name.index(c))
+        example = find_sample_value(df, c, columns_name.index(c))[0]
         if isinstance(example, str):
             if len(str(example.encode())) >= 255:
                 if not columns_length.get(c) or columns_length.get(c) < len(str(example.encode())):
-                    change_type(_dbstream, table_name=data["table_name"], column_name=c, type="VARCHAR(65000")
+                    change_type(_dbstream, table_name=data["table_name"], column_name=c, type="VARCHAR(65000)")
                     if other_table_to_update:
-                        change_type(_dbstream, table_name=data["table_name"], column_name=c, type="VARCHAR(65000")
+                        change_type(_dbstream, table_name=data["table_name"], column_name=c, type="VARCHAR(65000)")
 
 def change_columns_type(_dbstream, data, other_table_to_update):
     table_name = data["table_name"].split('.')
@@ -82,7 +82,7 @@ def change_columns_type(_dbstream, data, other_table_to_update):
     df = pd.DataFrame(rows, columns=columns_name)
 
     for c in columns_name:
-        example = find_sample_value(df, c, columns_name.index(c))
+        example = find_sample_value(df, c, columns_name.index(c))[0]
         if isinstance(example, float):
             if columns_type.get(c) != "float8":
                 change_type(_dbstream, table_name=data["table_name"], column_name=c, type="float8")
@@ -107,7 +107,7 @@ def columns_type_bool_to_str(_dbstream, data, other_table_to_update):
     df = pd.DataFrame(rows, columns=columns_name)
 
     for c in columns_name:
-        example = find_sample_value(df, c, columns_name.index(c))
+        example = find_sample_value(df, c, columns_name.index(c))[0]
         if isinstance(example, str):
             if columns_type.get(c) == "bool":
                 bool_to_str(_dbstream, table_name=data["table_name"], column_name=c)
