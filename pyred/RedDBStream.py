@@ -183,7 +183,13 @@ class RedDBStream(dbstream.DBStream):
                 information_schema.columns
                 WHERE
                 table_name = '%s' and table_schema = '%s'
-                """ % (table_name, schema_name)
+                union 
+                select col_name as column_name , col_type as data_type
+                from pg_get_late_binding_view_cols() cols(view_schema name, view_name name, col_name name, col_type varchar, col_num int)
+                WHERE
+                view_name = '%s' and view_schema = '%s'
+                
+                """ % (table_name, schema_name, table_name, schema_name)
 
         return self.execute_query(query=query)
 
