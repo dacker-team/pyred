@@ -83,6 +83,8 @@ class RedDBStream(dbstream.DBStream):
             final_data = []
             for x in temp_row:
                 for y in x:
+                    if isinstance(y, (list, dict)):
+                        y = json.dumps(y)
                     final_data.append(y)
 
             temp_string = ','.join(map(lambda a: '(' + ','.join(map(lambda b: '%s', a)) + ')', tuple(temp_row)))
