@@ -89,7 +89,7 @@ def change_columns_type(_dbstream, data, other_table_to_update):
                 if other_table_to_update:
                     change_type(_dbstream, table_name=other_table_to_update, column_name=c, type="float8")
         if isinstance(example, str):
-            if columns_type.get(c) != "varchar" and columns_type.get(c) != "bool" and columns_type.get(c) != "timestamp":
+            if columns_type.get(c) not in ["varchar", "bool", "timestamp"]:
                 change_type(_dbstream, table_name=data["table_name"], column_name=c, type="VARCHAR(255)")
                 if other_table_to_update:
                     change_type(_dbstream, table_name=other_table_to_update, column_name=c, type="VARCHAR(255)")
