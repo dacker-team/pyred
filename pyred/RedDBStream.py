@@ -128,6 +128,7 @@ class RedDBStream(dbstream.DBStream):
             self._send(data, replace=replace, batch_size=batch_size)
         except Exception as e:
             if "invalid input syntax for integer" in str(e).lower() \
+                    or "invalid input syntax for type integer" in str(e).lower() \
                     or "invalid input syntax for type double precision" in str(e).lower() \
                     or "is out of range for type integer" in str(e).lower():
                 change_columns_type(
