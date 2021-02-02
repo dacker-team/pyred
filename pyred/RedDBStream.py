@@ -59,7 +59,7 @@ class RedDBStream(dbstream.DBStream):
             return empty_list
 
     def _send(self, data, replace, batch_size=1000):
-        print(C.WARNING + "Initiate send to postgres/redshift..." + C.ENDC)
+        print(C.WARNING + "Initiate send to table %s..." % data["table_name"] + C.ENDC)
         con = self.connection()
         cursor = con.cursor()
         if replace:
