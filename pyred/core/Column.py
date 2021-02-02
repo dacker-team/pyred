@@ -3,6 +3,7 @@ import datetime
 import pandas as pd
 import psycopg2
 
+
 def change_type(_dbstream, table_name, column_name, type):
     query = """
     ALTER TABLE %(table_name)s ADD COLUMN %(new_column_name)s %(type)s;
@@ -15,8 +16,9 @@ def change_type(_dbstream, table_name, column_name, type):
         "new_column_name": column_name + "_new",
         "type": type
     }
-    _dbstream.execute_query(query)
+    _dbstream.execute_query(query, apply_special_env=False)
     return query
+
 
 def bool_to_str(_dbstream, table_name, column_name):
     query = """
@@ -29,8 +31,9 @@ def bool_to_str(_dbstream, table_name, column_name):
         "column_name": column_name,
         "new_column_name": column_name + "_new"
     }
-    _dbstream.execute_query(query)
+    _dbstream.execute_query(query, apply_special_env=False)
     return query
+
 
 def get_columns_length(_dbstream, schema_name, table_name):
     query = """
@@ -40,10 +43,11 @@ def get_columns_length(_dbstream, schema_name, table_name):
     AND character_maximum_length IS NOT NULL  
     """ % (table_name, schema_name)
     d = {}
-    r = _dbstream.execute_query(query)
+    r = _dbstream.execute_query(query, apply_special_env=False)
     for i in r:
         d[i["column_name"]] = i["character_maximum_length"]
     return d
+
 
 def get_columns_type(_dbstream, schema_name, table_name):
     query = """
@@ -52,7 +56,7 @@ def get_columns_type(_dbstream, schema_name, table_name):
     WHERE table_name='%s' and table_schema='%s' 
     """ % (table_name, schema_name)
     d = {}
-    r = _dbstream.execute_query(query)
+    r = _dbstream.execute_query(query, apply_special_env=False)
     for i in r:
         d[i["column_name"]] = i["udt_name"]
     return d
@@ -73,6 +77,7 @@ def choose_columns_to_extend(_dbstream, data, other_table_to_update):
                     change_type(_dbstream, table_name=data["table_name"], column_name=c, type="VARCHAR(65000)")
                     if other_table_to_update:
                         change_type(_dbstream, table_name=other_table_to_update, column_name=c, type="VARCHAR(65000)")
+
 
 def change_columns_type(_dbstream, data, other_table_to_update):
     table_name = data["table_name"].split('.')
@@ -99,6 +104,7 @@ def change_columns_type(_dbstream, data, other_table_to_update):
                 if other_table_to_update:
                     change_type(_dbstream, table_name=other_table_to_update, column_name=c, type="float8")
 
+
 def columns_type_bool_to_str(_dbstream, data, other_table_to_update):
     table_name = data["table_name"].split('.')
     columns_type = get_columns_type(_dbstream, table_name=table_name[1], schema_name=table_name[0])
@@ -114,11 +120,12 @@ def columns_type_bool_to_str(_dbstream, data, other_table_to_update):
                 if other_table_to_update:
                     bool_to_str(_dbstream, table_name=other_table_to_update, column_name=c)
 
+
 def detect_type(_dbstream, name, example):
     print('Define type of %s...' % name)
     try:
         query = "SELECT CAST('%s' as TIMESTAMP)" % example
-        _dbstream.execute_query(query)
+        _dbstream.execute_query(query, apply_special_env=False)
         return "TIMESTAMP"
 
     except psycopg2.Error:
@@ -141,6 +148,7 @@ def detect_type(_dbstream, name, example):
     else:
         return "VARCHAR(255)"
 
+
 def convert_to_bool(x):
     if x.lower() == "true" or x == 1 or x.lower() == "t":
         return True
@@ -149,16 +157,19 @@ def convert_to_bool(x):
     else:
         raise Exception
 
+
 def convert_to_int(x):
     if x[-2:] == ".0":
-        return int(x.replace(".0",""))
+        return int(x.replace(".0", ""))
     else:
         return int(x)
+
 
 def len_or_max(s):
     if isinstance(s, str):
         return len(s)
     return s
+
 
 def find_sample_value(df, name, i):
     df1 = df[name].dropna()
@@ -182,7 +193,8 @@ def find_sample_value(df, name, i):
         if df1.empty:
             return None, None
         else:
-            return df1_copy[df1.map(len_or_max) == df1.map(len_or_max).max()].iloc[0], df1_copy[df1.map(len_or_max) == df1.map(len_or_max).min()].iloc[0]
+            return df1_copy[df1.map(len_or_max) == df1.map(len_or_max).max()].iloc[0], \
+                   df1_copy[df1.map(len_or_max) == df1.map(len_or_max).min()].iloc[0]
     elif df1.dtype == 'int64':
         max = int(df1.max())
         min = int(df1.min())

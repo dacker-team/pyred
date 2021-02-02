@@ -18,7 +18,7 @@ def get_table_info(_dbstream, table_and_schema_name):
     query = "SELECT column_name, data_type, character_maximum_length, is_nullable FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='%s'" % table_name
     if schema_name:
         query = query + " AND TABLE_SCHEMA='%s'" % schema_name
-    return _dbstream.execute_query(query)
+    return _dbstream.execute_query(query, apply_special_env=False)
 
 
 def format_create_table(_dbstream, data):
@@ -54,23 +54,24 @@ def format_create_table(_dbstream, data):
         else:
             query = query + "\n     " + k + ' ' + params[k]["type"] + ' ' + 'NULL ,' + string_example
     query = query + "\n )"
-    print(query)
     return query
 
 
 def create_table(_dbstream, data, other_table_to_update):
     query = format_create_table(_dbstream, data)
     try:
-        _dbstream.execute_query(query % {"table_name": data["table_name"]})
+        filled_query = query % {"table_name": data["table_name"]}
+        print(filled_query)
+        _dbstream.execute_query(filled_query, apply_special_env=False)
         if other_table_to_update:
-            _dbstream.execute_query(query % {"table_name": other_table_to_update})
+            _dbstream.execute_query(query % {"table_name": other_table_to_update}, apply_special_env=False)
     except psycopg2.ProgrammingError as e:
         e = str(e)
         if e[:7] == "schema ":
-            _dbstream.execute_query("CREATE SCHEMA " + data['table_name'].split(".")[0])
-            _dbstream.execute_query(query % {"table_name": data["table_name"]})
+            _dbstream.execute_query("CREATE SCHEMA " + data['table_name'].split(".")[0], apply_special_env=False)
+            _dbstream.execute_query(query % {"table_name": data["table_name"]}, apply_special_env=False)
             if other_table_to_update:
-                _dbstream.execute_query(query % {"table_name": other_table_to_update})
+                _dbstream.execute_query(query % {"table_name": other_table_to_update}, apply_special_env=False)
         else:
             print(e)
 
@@ -111,5 +112,5 @@ def create_columns(_dbstream, data, other_table_to_update):
                 queries.append(query)
     if queries:
         query = '; '.join(queries)
-        _dbstream.execute_query(query)
+        _dbstream.execute_query(query, apply_special_env=False)
     return 0

@@ -1,16 +1,18 @@
 import pandas as pd
 
+
 def schema_compare_tool(self, schema_ref, new_schema_test):
     # same table uploaded ?
     query1 = """select "table_name" from information_schema.tables where table_schema='%s'""" % schema_ref
     query2 = """select "table_name" from information_schema.tables where table_schema='%s'""" % new_schema_test
-    table_schema_ref = pd.DataFrame(self.execute_query(query1))
-    table_new_schema_test = pd.DataFrame(self.execute_query(query2))
+    table_schema_ref = pd.DataFrame(self.execute_query(query1, apply_special_env=False))
+    table_new_schema_test = pd.DataFrame(self.execute_query(query2, apply_special_env=False))
     if table_schema_ref['table_name'].equals(table_new_schema_test['table_name']):
         print("Same tables in both schemas")
     if not table_schema_ref['table_name'].equals(table_new_schema_test['table_name']):
         print("Table not loaded in schema %s:" % new_schema_test)
-        df = table_schema_ref.merge(table_new_schema_test, how='outer', indicator=True).loc[lambda x: x['_merge'] == 'left_only']
+        df = table_schema_ref.merge(table_new_schema_test, how='outer', indicator=True).loc[
+            lambda x: x['_merge'] == 'left_only']
         if not df.empty:
             print(df)
         print("")
@@ -23,8 +25,8 @@ def schema_compare_tool(self, schema_ref, new_schema_test):
                  % (schema_ref, table)
         query2 = """select "column_name" from information_schema.columns where table_schema='%s' and table_name='%s'""" \
                  % (new_schema_test, table)
-        columns_table_1 = pd.DataFrame(self.execute_query(query1))
-        columns_table_2 = pd.DataFrame(self.execute_query(query2))
+        columns_table_1 = pd.DataFrame(self.execute_query(query1, apply_special_env=False))
+        columns_table_2 = pd.DataFrame(self.execute_query(query2, apply_special_env=False))
         if columns_table_1['column_name'].equals(columns_table_2['column_name']):
             print("     Same columns in both tables")
         if not columns_table_1['column_name'].equals(columns_table_2['column_name']):
@@ -44,8 +46,8 @@ def schema_compare_tool(self, schema_ref, new_schema_test):
                      % (schema_ref, table, column)
             query2 = """select "udt_name" from information_schema.columns where table_schema='%s' and table_name='%s' and column_name='%s'""" \
                      % (new_schema_test, table, column)
-            type1 = str(self.execute_query(query1))
-            type2 = str(self.execute_query(query2))
+            type1 = str(self.execute_query(query1, apply_special_env=False))
+            type2 = str(self.execute_query(query2, apply_special_env=False))
             if type1 != type2:
                 print("         ", "type from schema 1 :", type1, "// type from schema 2:", type2)
             if type1 == type2:
@@ -53,6 +55,6 @@ def schema_compare_tool(self, schema_ref, new_schema_test):
                          % (column, schema_ref, table)
                 query2 = """select '%s' from %s.%s""" \
                          % (column, new_schema_test, table)
-                value1 = pd.DataFrame(self.execute_query(query1))
-                value2 = pd.DataFrame(self.execute_query(query2))
+                value1 = pd.DataFrame(self.execute_query(query1, apply_special_env=False))
+                value2 = pd.DataFrame(self.execute_query(query2, apply_special_env=False))
                 print("         ", value2.equals(value1))

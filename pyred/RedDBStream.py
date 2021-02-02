@@ -65,7 +65,7 @@ class RedDBStream(dbstream.DBStream):
         if replace:
             cleaning_request = '''DELETE FROM ''' + data["table_name"] + ''';'''
             print(C.WARNING + "Cleaning" + C.ENDC)
-            self.execute_query(cleaning_request)
+            self.execute_query(cleaning_request, apply_special_env=False)
             print(C.OKGREEN + "[OK] Cleaning Done" + C.ENDC)
 
         boolean = True
