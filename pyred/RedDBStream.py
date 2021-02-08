@@ -208,7 +208,7 @@ class RedDBStream(dbstream.DBStream):
                 
                 """ % (table_name, schema_name, table_name, schema_name)
 
-        return self.execute_query(query=query)
+        return self.execute_query(query=query, apply_special_env=False)
 
     def create_view_from_columns(self, view_name, columns, schema_name, table_name):
         view_query = '''DROP VIEW IF EXISTS %s ;CREATE VIEW %s as (SELECT %s FROM %s.%s)''' \
