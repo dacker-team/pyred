@@ -223,3 +223,21 @@ class RedDBStream(dbstream.DBStream):
 
     def schema_compare(self, schema_ref, new_schema_test):
         schema_compare_tool(self, schema_ref, new_schema_test)
+
+    @staticmethod
+    def build_pydatasource_view(query_string):
+        return """
+                drop view if exists {{ table_name }};
+                create view {{ table_name }} as (
+                %s
+                ) with no schema binding ;
+                """ % query_string
+
+    @staticmethod
+    def build_pydatasource_table(query_string):
+        return """
+                drop table if exists {{ table_name }};
+                create table {{ table_name }} as (
+                %s
+                );
+                """ % query_string
