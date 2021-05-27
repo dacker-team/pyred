@@ -241,3 +241,12 @@ class RedDBStream(dbstream.DBStream):
                 %s
                 );
                 """ % query_string
+
+    @staticmethod
+    def build_pydatasource_table_cascade(query_string):
+        return """
+                drop table if exists {{ table_name }} CASCADE;
+                create table {{ table_name }} as (
+                %s
+                );
+                """ % query_string
