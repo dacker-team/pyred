@@ -74,9 +74,11 @@ def choose_columns_to_extend(_dbstream, data, other_table_to_update):
         if isinstance(example, str):
             if len(str(example.encode())) >= 255:
                 if not columns_length.get(c) or columns_length.get(c) < len(str(example.encode())):
-                    change_type(_dbstream, table_name=data["table_name"], column_name=c, type="VARCHAR(65000)")
+                    change_type(_dbstream, table_name=data["table_name"], column_name=c,
+                                type="VARCHAR(%s)" % len(str(example.encode())))
                     if other_table_to_update:
-                        change_type(_dbstream, table_name=other_table_to_update, column_name=c, type="VARCHAR(65000)")
+                        change_type(_dbstream, table_name=other_table_to_update, column_name=c,
+                                    type="VARCHAR(%s)" % len(str(example.encode())))
 
 
 def change_columns_type(_dbstream, data, other_table_to_update):
@@ -134,7 +136,7 @@ def detect_type(_dbstream, name, example):
         return "TIMESTAMP"
     elif isinstance(example, str):
         if len(example) >= 255:
-            return "VARCHAR(65000)"
+            return "VARCHAR(%s)" % len(str(example.encode()))
         return "VARCHAR(255)"
     elif isinstance(example, bool):
         return "BOOLEAN"
