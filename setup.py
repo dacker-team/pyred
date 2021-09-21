@@ -17,7 +17,7 @@ setup(
     install_requires=[
         "psycopg2-binary>=2.7.4",
         "pandas>=0.25.0",
-        "dbstream>=0.0.23"
+        "dbstream>=0.1.5"
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
