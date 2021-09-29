@@ -5,7 +5,7 @@ with open('README.rst') as f:
 
 setup(
     name='pyred',
-    version='0.3.47',
+    version='0.3.48',
     description='Easily send data to Amazon Redshift',
     long_description=readme,
     author='Dacker',
@@ -17,7 +17,7 @@ setup(
     install_requires=[
         "psycopg2-binary>=2.7.4",
         "pandas>=0.25.0",
-        "dbstream>=0.1.5"
+        "dbstream>=0.1.6"
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
