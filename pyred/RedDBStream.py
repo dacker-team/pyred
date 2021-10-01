@@ -39,9 +39,13 @@ class RedDBStream(dbstream.DBStream):
         try:
             cursor.execute(query)
         except Exception as e:
-            cursor.close()
-            con.close()
-            raise e
+            time.sleep(5)
+            try:
+                cursor.execute(query)
+            except Exception as e:
+                cursor.close()
+                con.close()
+                raise e
         con.commit()
         try:
             result = cursor.fetchall()
@@ -114,7 +118,8 @@ class RedDBStream(dbstream.DBStream):
                           data,
                           replace=True,
                           batch_size=1000,
-                          other_table_to_update=None
+                          other_table_to_update=None,
+                          retry=1
                           ):
         """
         data = {
@@ -123,6 +128,7 @@ class RedDBStream(dbstream.DBStream):
             "rows"		: [[first_raw_value,second_raw_value,...,last_raw_value],...]
         }
         """
+        data["columns_name"] = [c.lower() for c in data["columns_name"]]
         data_copy = copy.deepcopy(data)
         try:
             self._send(data, replace=replace, batch_size=batch_size)
@@ -164,7 +170,12 @@ class RedDBStream(dbstream.DBStream):
                 replace = False
 
             else:
-                raise e
+                if retry == 1:
+                    time.sleep(10)
+                    self._send_data_custom(data_copy, replace=replace, batch_size=batch_size,
+                                           other_table_to_update=other_table_to_update, retry=2)
+                else:
+                    raise e
 
             self._send_data_custom(data_copy, replace=replace, batch_size=batch_size,
                                    other_table_to_update=other_table_to_update)
