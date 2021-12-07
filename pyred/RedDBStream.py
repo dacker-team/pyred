@@ -83,7 +83,10 @@ class RedDBStream(dbstream.DBStream):
             final_data = []
             for x in temp_row:
                 for y in x:
-                    final_data.append(y)
+                    if isinstance(y, dict) or isinstance(y, list):
+                        final_data.append(str(y))
+                    else:
+                        final_data.append(y)
 
             temp_string = ','.join(map(lambda a: '(' + ','.join(map(lambda b: '%s', a)) + ')', tuple(temp_row)))
 
