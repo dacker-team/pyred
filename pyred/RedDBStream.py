@@ -39,9 +39,18 @@ class RedDBStream(dbstream.DBStream):
         try:
             cursor.execute(query)
         except Exception as e:
-            cursor.close()
-            con.close()
-            raise e
+            if e in (psycopg2.errors.InternalError_, psycopg2.OperationalError):
+                time.sleep(5)
+                try:
+                    cursor.execute(query)
+                except Exception as e:
+                    cursor.close()
+                    con.close()
+                    raise e
+            else:
+                cursor.close()
+                con.close()
+                raise e
         con.commit()
         try:
             result = cursor.fetchall()
@@ -96,9 +105,18 @@ class RedDBStream(dbstream.DBStream):
                 try:
                     cursor.execute(inserting_request, final_data)
                 except Exception as e:
-                    cursor.close()
-                    con.close()
-                    raise e
+                    if e in (psycopg2.errors.InternalError_, psycopg2.OperationalError):
+                        time.sleep(5)
+                        try:
+                            cursor.execute(query)
+                        except Exception as e:
+                            cursor.close()
+                            con.close()
+                            raise e
+                    else:
+                        cursor.close()
+                        con.close()
+                        raise e
             index = index + 1
             percent = round(index * 100 / total_nb_batches, 2)
             if percent < 100:
@@ -117,7 +135,8 @@ class RedDBStream(dbstream.DBStream):
                           data,
                           replace=True,
                           batch_size=1000,
-                          other_table_to_update=None
+                          other_table_to_update=None,
+                          retry=1
                           ):
         """
         data = {
@@ -126,6 +145,7 @@ class RedDBStream(dbstream.DBStream):
             "rows"		: [[first_raw_value,second_raw_value,...,last_raw_value],...]
         }
         """
+        data["columns_name"] = [c.lower() for c in data["columns_name"]]
         data_copy = copy.deepcopy(data)
         try:
             self._send(data, replace=replace, batch_size=batch_size)
@@ -167,7 +187,12 @@ class RedDBStream(dbstream.DBStream):
                 replace = False
 
             else:
-                raise e
+                if retry == 1:
+                    time.sleep(10)
+                    self._send_data_custom(data_copy, replace=replace, batch_size=batch_size,
+                                           other_table_to_update=other_table_to_update, retry=2)
+                else:
+                    raise e
 
             self._send_data_custom(data_copy, replace=replace, batch_size=batch_size,
                                    other_table_to_update=other_table_to_update)
@@ -208,7 +233,7 @@ class RedDBStream(dbstream.DBStream):
                 from pg_get_late_binding_view_cols() cols(view_schema name, view_name name, col_name name, col_type varchar, col_num int)
                 WHERE
                 view_name = '%s' and view_schema = '%s'
-                
+
                 """ % (table_name, schema_name, table_name, schema_name)
 
         return self.execute_query(query=query, apply_special_env=False)
