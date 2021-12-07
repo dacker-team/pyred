@@ -5,7 +5,7 @@ with open('README.rst') as f:
 
 setup(
     name='pyred',
-    version='0.3.51',
+    version='0.3.50',
     description='Easily send data to Amazon Redshift',
     long_description=readme,
     author='Dacker',
