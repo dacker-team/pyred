@@ -23,14 +23,20 @@ class RedDBStream(dbstream.DBStream):
 
     def connection(self):
         connection_kwargs = self.credentials()
+        keepalive_kwargs = {
+            "keepalives": 1,
+            "keepalives_idle": 30,
+            "keepalives_interval": 5,
+            "keepalives_count": 5,
+        }
         try:
-            con = psycopg2.connect(**connection_kwargs, cursor_factory=RealDictCursor)
+            con = psycopg2.connect(**connection_kwargs, **keepalive_kwargs, cursor_factory=RealDictCursor)
         except psycopg2.OperationalError:
             time.sleep(2)
             if self.ssh_tunnel:
                 self.ssh_tunnel.close()
                 self.create_tunnel()
-            con = psycopg2.connect(**connection_kwargs, cursor_factory=RealDictCursor)
+            con = psycopg2.connect(**connection_kwargs, **keepalive_kwargs, cursor_factory=RealDictCursor)
         return con
 
     def _execute_query_custom(self, query):
@@ -201,7 +207,7 @@ class RedDBStream(dbstream.DBStream):
         print('trying to clean table %s.%s using %s' % (schema_prefix, table, selecting_id))
         cleaning_query = """
                 DELETE FROM %(schema_name)s.%(table_name)s WHERE %(id)s IN (SELECT distinct %(id)s FROM %(schema_name)s.%(table_name)s_temp);
-                INSERT INTO %(schema_name)s.%(table_name)s 
+                INSERT INTO %(schema_name)s.%(table_name)s
                 SELECT * FROM %(schema_name)s.%(table_name)s_temp;
                 DELETE FROM %(schema_name)s.%(table_name)s_temp;
                 """ % {"table_name": table,
@@ -228,7 +234,7 @@ class RedDBStream(dbstream.DBStream):
                 information_schema.columns
                 WHERE
                 table_name = '%s' and table_schema = '%s'
-                union 
+                union
                 select col_name as column_name , col_type as data_type
                 from pg_get_late_binding_view_cols() cols(view_schema name, view_name name, col_name name, col_type varchar, col_num int)
                 WHERE
